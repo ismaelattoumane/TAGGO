@@ -1,0 +1,378 @@
+:root {
+  font-family: Inter, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #2b2d42;
+  background: #f5e1da;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --bg: #f5e1da;
+  --panel: #fffaf8;
+  --panel-strong: #f9efe8;
+  --ink: #2b2d42;
+  --muted: #6d597a;
+  --accent: #b56576;
+  --accent-strong: #6f2da8;
+  --highlight: #f4c95d;
+  --blue: #4cc9f0;
+  --navy: #0b1320;
+  --border: rgba(43, 45, 66, 0.12);
+  --shadow: 0 20px 50px rgba(43, 45, 66, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-width: 1200px;
+  background: linear-gradient(180deg, #f5e1da 0%, #fff8f4 100%);
+  color: var(--ink);
+}
+
+button,
+input,
+a {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.brand-mark {
+  display: inline-flex;
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(111, 45, 168, 0.08);
+  color: var(--accent-strong);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+}
+
+.auth-shell,
+.dashboard-shell,
+.settings-shell,
+.public-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.auth-panel,
+.settings-card,
+.public-card {
+  width: 100%;
+  max-width: 520px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.brand-block {
+  margin-bottom: 1.5rem;
+}
+
+.brand-block h1,
+.settings-card h1,
+.public-card h1 {
+  margin-top: 0.9rem;
+  font-size: clamp(2rem, 2vw, 2.4rem);
+  line-height: 1.1;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.auth-form input,
+.auth-form select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.auth-form input:focus,
+.auth-form select:focus {
+  outline: 2px solid rgba(76, 201, 240, 0.4);
+  border-color: var(--blue);
+}
+
+.primary-button,
+.ghost-button,
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: none;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  text-decoration: none;
+}
+
+.primary-button {
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  color: #fff;
+  font-weight: 700;
+  padding: 0.9rem 1.2rem;
+}
+
+.ghost-button {
+  background: rgba(111, 45, 168, 0.08);
+  color: var(--accent-strong);
+  padding: 0.7rem 0.9rem;
+  font-weight: 600;
+}
+
+.link-button {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.primary-button:hover,
+.ghost-button:hover,
+.link-button:hover {
+  transform: translateY(-1px);
+}
+
+.auth-link {
+  margin-top: 1rem;
+  color: var(--muted);
+}
+
+.auth-link a {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.form-error {
+  color: #b56576;
+  font-weight: 600;
+}
+
+.dashboard-shell {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.sidebar {
+  width: 260px;
+  min-height: 100vh;
+  background: rgba(43, 45, 66, 0.96);
+  color: #f5f5f7;
+  padding: 2rem 1.2rem;
+}
+
+.nav {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 2rem;
+}
+
+.nav-item {
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.main-panel {
+  flex: 1;
+  padding: 2rem 2.5rem;
+}
+
+.topbar,
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.topbar {
+  margin-bottom: 2rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card,
+.panel {
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.stat-card {
+  padding: 1.4rem 1.2rem;
+}
+
+.stat-card span {
+  display: block;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.stat-card strong {
+  font-size: 2rem;
+}
+
+.panel {
+  padding: 1.2rem;
+}
+
+.table-list {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.qr-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(245, 225, 218, 0.36);
+}
+
+.qr-id {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.qr-row h3 {
+  margin-top: 0.2rem;
+  font-size: 1.1rem;
+}
+
+.pill-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.status-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  font-weight: 700;
+}
+
+.status-pill.active {
+  background: rgba(76, 201, 240, 0.14);
+  color: #0b1320;
+}
+
+.status-pill.draft {
+  background: rgba(244, 201, 93, 0.18);
+  color: #6d597a;
+}
+
+.public-id {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.public-page {
+  background: radial-gradient(circle at top, rgba(111, 45, 168, 0.12), transparent 40%), #f5e1da;
+}
+
+.public-card {
+  max-width: 620px;
+}
+
+.headline {
+  margin-top: 1rem;
+  font-size: 1.15rem;
+  color: var(--muted);
+}
+
+.bio {
+  margin-top: 1rem;
+  line-height: 1.7;
+}
+
+.public-meta {
+  margin: 1.5rem 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: rgba(111, 45, 168, 0.04);
+  border-radius: 14px;
+}
+
+.settings-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.4rem 0 0;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.settings-list li {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+}
