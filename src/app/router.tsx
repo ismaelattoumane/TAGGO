@@ -19,14 +19,20 @@ function AppEntry() {
   return <Navigate to={user ? '/dashboard' : '/login'} replace />
 }
 
+function GuestRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  return user ? <Navigate to="/dashboard" replace /> : <>{children}</>
+}
+
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
       { index: true, element: <AppEntry /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
+      { path: 'login', element: <GuestRoute><LoginPage /></GuestRoute> },
+      { path: 'register', element: <GuestRoute><RegisterPage /></GuestRoute> },
       {
         path: 'dashboard',
         element: (

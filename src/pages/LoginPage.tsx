@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { isSupabaseConfigured } from '../lib/supabase'
 import { isValidEmail, isValidPassword } from '../lib/validators'
 
 const DEMO_ACCOUNTS = [
@@ -111,25 +112,27 @@ export function LoginPage() {
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #ddd' }}>
-          <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
-            🧪 Comptes de démonstration :
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {DEMO_ACCOUNTS.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                className="ghost-button"
-                onClick={() => quickSignIn(account.email, account.password)}
-                disabled={loading}
-                style={{ fontSize: '0.875rem', textAlign: 'left' }}
-              >
-                {account.label} ({account.email})
-              </button>
-            ))}
+        {!isSupabaseConfigured ? (
+          <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #ddd' }}>
+            <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
+              🧪 Comptes de démonstration :
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {DEMO_ACCOUNTS.map((account) => (
+                <button
+                  key={account.email}
+                  type="button"
+                  className="ghost-button"
+                  onClick={() => quickSignIn(account.email, account.password)}
+                  disabled={loading}
+                  style={{ fontSize: '0.875rem', textAlign: 'left' }}
+                >
+                  {account.label} ({account.email})
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : null}
 
         <p className="auth-link">
           Pas encore inscrit ? <Link to="/register">Créer un compte</Link>

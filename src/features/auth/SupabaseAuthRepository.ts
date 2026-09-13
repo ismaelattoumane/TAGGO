@@ -1,3 +1,4 @@
+import { buildAuthRedirectUrl } from '../../lib/runtime'
 import { supabase } from '../../lib/supabase'
 import type { AuthRepository } from './AuthRepository'
 import type { AuthSession, AuthStateListener, AuthUser, SignUpInput } from './authTypes'
@@ -38,7 +39,10 @@ export class SupabaseAuthRepository implements AuthRepository {
     const { data, error } = await requireClient().auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: buildAuthRedirectUrl('/login'),
+      },
     })
     if (error || !data.user) throw error ?? new Error('Inscription impossible.')
     return toUser(data.user)
