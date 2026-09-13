@@ -3,12 +3,14 @@ import { useParams } from 'react-router-dom'
 import { qrRepository } from '../features/qr/repository'
 import type { QrRecord } from '../features/qr/qrTypes'
 import { Alert } from '../components/Alert'
+import { isValidDestinationUrl } from '../lib/validators'
 
 export function PublicQrPage() {
   const { publicId, tag } = useParams()
   const code = tag ?? publicId
   const [qr, setQr] = useState<QrRecord | null>(null)
   const [loaded, setLoaded] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -16,7 +18,11 @@ export function PublicQrPage() {
         setLoaded(true)
         return
       }
-      setQr(await qrRepository.getByPublicId(code))
+      try {
+        setQr(await qrRepository.getByPublicId(code))
+      } catch {
+        setLoadError(true)
+      }
       setLoaded(true)
     }
     void load()
@@ -44,6 +50,18 @@ export function PublicQrPage() {
     )
   }
 
+  if (loadError) {
+    return (
+      <main className="public-page">
+        <section className="public-card">
+          <p className="eyebrow">QR public</p>
+          <h1>Service temporairement indisponible</h1>
+          <Alert type="error">Impossible de charger ce TAGGO pour le moment. Réessayez plus tard.</Alert>
+        </section>
+      </main>
+    )
+  }
+
   if (!qr) {
     return (
       <main className="public-page">
@@ -61,7 +79,7 @@ export function PublicQrPage() {
     )
   }
 
-  if (qr.status !== 'active') {
+  if (qr.status !== 'active' || !isValidDestinationUrl(qr.destinationUrl)) {
     return (
       <main className="public-page">
         <section className="public-card">

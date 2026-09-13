@@ -22,6 +22,9 @@ export async function signUp(email: string, password: string, fullName: string) 
     },
   })
   if (error) throw error
+  if (!data.session) {
+    throw new Error('Compte créé. Confirmez votre adresse email avant de vous connecter.')
+  }
   return data
 }
 

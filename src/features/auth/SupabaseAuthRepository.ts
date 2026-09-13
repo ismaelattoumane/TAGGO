@@ -45,6 +45,9 @@ export class SupabaseAuthRepository implements AuthRepository {
       },
     })
     if (error || !data.user) throw error ?? new Error('Inscription impossible.')
+    if (!data.session) {
+      throw new Error('Compte créé. Confirmez votre adresse email avant de vous connecter.')
+    }
     return toUser(data.user)
   }
 

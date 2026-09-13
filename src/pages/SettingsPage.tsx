@@ -43,22 +43,7 @@ export function SettingsPage() {
 
           <section style={{ border: '1px solid rgba(43,45,66,0.12)', borderRadius: '18px', padding: '1.25rem' }}>
             <h2 style={{ marginBottom: '1rem' }}>Profil</h2>
-            <div style={{ display: 'grid', gap: '1rem' }}>
-              <div>
-                <p style={{ color: '#6d597a', marginBottom: '0.25rem' }}>Nom affiché</p>
-                <div className="auth-form">
-                  <input value={user?.fullName || ''} readOnly placeholder="Nom visible sur la page publique" />
-                </div>
-              </div>
-              <div>
-                <p style={{ color: '#6d597a', marginBottom: '0.25rem' }}>Headline</p>
-                <input value="Collection TAGGO" readOnly />
-              </div>
-              <div>
-                <p style={{ color: '#6d597a', marginBottom: '0.25rem' }}>Bio</p>
-                <input value="Page publique de marque connectée." readOnly />
-              </div>
-            </div>
+            <p style={{ color: '#6d597a' }}>La personnalisation du profil public sera disponible dans une prochaine étape.</p>
           </section>
 
           <section style={{ border: '1px solid rgba(43,45,66,0.12)', borderRadius: '18px', padding: '1.25rem' }}>
@@ -71,10 +56,7 @@ export function SettingsPage() {
 
           <section style={{ border: '1px solid rgba(43,45,66,0.12)', borderRadius: '18px', padding: '1.25rem' }}>
             <h2 style={{ marginBottom: '1rem' }}>Abonnement</h2>
-            <p style={{ color: '#6d597a' }}>La gestion complète de l’abonnement arrive dans la prochaine étape du MVP. Le statut actuel reste visible côté Supabase selon le schéma existant.</p>
-            <div style={{ marginTop: '1rem', display: 'inline-flex', padding: '0.55rem 0.9rem', borderRadius: '999px', background: 'rgba(76, 201, 240, 0.12)', color: '#0b1320', fontWeight: 700 }}>
-              Statut : à venir
-            </div>
+            <p style={{ color: '#6d597a' }}>Aucune information d’abonnement n’est disponible pour le moment.</p>
           </section>
         </div>
       </section>
