@@ -27,7 +27,7 @@ create table if not exists public.qr_codes (
   owner_id uuid not null references public.profiles(id) on delete cascade,
   public_id text not null unique check (public_id ~ '^TGG-[A-Z0-9]{7}$'),
   status text not null default 'draft' check (status in ('draft', 'active', 'inactive', 'archived')),
-  destination_url text check (destination_url is null or destination_url ~* '^https?://'),
+  destination_url text check (destination_url is null or destination_url ~* '^https?://[^[:space:]/]+([/:?#].*)?$'),
   title text check (title is null or length(trim(title)) between 1 and 80),
   description text,
   is_public boolean not null default false,
@@ -61,6 +61,10 @@ create index if not exists idx_qr_codes_public_id on public.qr_codes(public_id);
 create index if not exists idx_public_profiles_qr_code_id on public.public_profiles(qr_code_id);
 create index if not exists idx_subscriptions_user_id on public.subscriptions(user_id);
 
+alter table public.qr_codes drop constraint if exists qr_codes_destination_url_check;
+alter table public.qr_codes add constraint qr_codes_destination_url_check
+  check (destination_url is null or destination_url ~* '^https?://[^[:space:]/]+([/:?#].*)?$');
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
@@ -71,38 +75,56 @@ alter table public.qr_codes enable row level security;
 alter table public.public_profiles enable row level security;
 alter table public.subscriptions enable row level security;
 
+drop policy if exists "Users can view their own profile" on public.profiles;
 create policy "Users can view their own profile" on public.profiles
 for select using (auth.uid() = id);
 
+drop policy if exists "Users can update their own profile" on public.profiles;
 create policy "Users can update their own profile" on public.profiles
 for update using (auth.uid() = id) with check (auth.uid() = id);
 
+drop policy if exists "Users can insert their own profile" on public.profiles;
 create policy "Users can insert their own profile" on public.profiles
 for insert with check (auth.uid() = id);
 
+drop policy if exists "Owners can view their QR codes" on public.qr_codes;
 create policy "Owners can view their QR codes" on public.qr_codes
 for select using (auth.uid() = owner_id);
 
+drop policy if exists "Public can view active QR codes" on public.qr_codes;
 create policy "Public can view active QR codes" on public.qr_codes
 for select using (is_public = true and status = 'active' and destination_url is not null);
 
+drop policy if exists "Owners can insert their QR codes" on public.qr_codes;
 create policy "Owners can insert their QR codes" on public.qr_codes
 for insert with check (auth.uid() = owner_id);
 
+drop policy if exists "Owners can update their QR codes" on public.qr_codes;
 create policy "Owners can update their QR codes" on public.qr_codes
 for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
 
-create policy "Public can view public QR profile data" on public.public_profiles
-for select using (true);
+drop policy if exists "Owners can delete their QR codes" on public.qr_codes;
+create policy "Owners can delete their QR codes" on public.qr_codes
+for delete using (auth.uid() = owner_id);
 
+drop policy if exists "Public can view public QR profile data" on public.public_profiles;
+create policy "Public can view public QR profile data" on public.public_profiles
+for select using (exists (
+  select 1 from public.qr_codes q
+  where q.id = public_profiles.qr_code_id
+    and q.is_public = true
+    and q.status = 'active'
+    and q.destination_url is not null
+));
+
+drop policy if exists "Owners can manage their public profile" on public.public_profiles;
 create policy "Owners can manage their public profile" on public.public_profiles
 for all using (exists (
   select 1 from public.qr_codes q
   where q.id = public_profiles.qr_code_id and q.owner_id = auth.uid()
 ));
 
+drop policy if exists "Users can manage their own subscriptions" on public.subscriptions;
+drop policy if exists "Users can view their own subscriptions" on public.subscriptions;
 create policy "Users can view their own subscriptions" on public.subscriptions
 for select using (auth.uid() = user_id);
-
-create policy "Users can manage their own subscriptions" on public.subscriptions
-for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

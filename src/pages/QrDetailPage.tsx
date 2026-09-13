@@ -15,6 +15,7 @@ export function QrDetailPage() {
   const [publicId, setPublicId] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
@@ -25,17 +26,21 @@ export function QrDetailPage() {
         return
       }
 
-      const qr = await qrRepository.getById(qrId, user?.id)
-      if (!qr) {
-        setMessage('QR non trouvé.')
-        setLoading(false)
-        return
-      }
+      try {
+        const qr = await qrRepository.getById(qrId, user?.id)
+        if (!qr) {
+          setMessage('QR non trouvé.')
+          setLoading(false)
+          return
+        }
 
-      setTitle(qr.title)
-      setDestinationUrl(qr.destinationUrl)
-      setStatus(qr.status)
-      setPublicId(qr.publicId)
+        setTitle(qr.title)
+        setDestinationUrl(qr.destinationUrl)
+        setStatus(qr.status)
+        setPublicId(qr.publicId)
+      } catch {
+        setMessage('Impossible de charger ce QR pour le moment.')
+      }
       setLoading(false)
     }
     if (user) void load()
@@ -52,19 +57,26 @@ export function QrDetailPage() {
       return
     }
 
-    const updated = await qrRepository.update(qrId, {
-      title: cleanedTitle,
-      destinationUrl,
-      status,
-    }, user?.id)
+    setSaving(true)
+    try {
+      const updated = await qrRepository.update(qrId, {
+        title: cleanedTitle,
+        destinationUrl,
+        status,
+      }, user?.id)
 
-    if (updated) {
-      setMessage('QR mis à jour avec succès.')
-      setTimeout(() => {
-        navigate('/dashboard')
-      }, 1000)
-    } else {
-      setMessage('Erreur lors de la sauvegarde.')
+      if (updated) {
+        setMessage('QR mis à jour avec succès.')
+        setTimeout(() => {
+          navigate('/dashboard')
+        }, 1000)
+      } else {
+        setMessage('Erreur lors de la sauvegarde.')
+      }
+    } catch {
+      setMessage('Impossible de sauvegarder ce QR pour le moment.')
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -146,8 +158,8 @@ export function QrDetailPage() {
           ) : null}
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" className="primary-button" onClick={() => void handleSave()}>
-              Enregistrer
+            <button type="button" className="primary-button" onClick={() => void handleSave()} disabled={saving}>
+              {saving ? 'Enregistrement...' : 'Enregistrer'}
             </button>
             <button
               type="button"

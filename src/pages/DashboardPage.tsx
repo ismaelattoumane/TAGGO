@@ -15,12 +15,22 @@ export function DashboardPage() {
   const navigate = useNavigate()
   const [qrList, setQrList] = useState<QrRecord[]>([])
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'inactive' | 'archived'>('all')
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     const load = async () => {
-      setQrList(await qrRepository.list(user?.id))
+      try {
+        setQrList(await qrRepository.list(user?.id))
+      } catch {
+        setLoadError('Impossible de charger vos TAGGO pour le moment.')
+      } finally {
+        setLoading(false)
+      }
     }
-    if (user) void load()
+    if (user) {
+      void load()
+    }
   }, [user])
 
   const filteredQrList = filter === 'all' ? qrList : qrList.filter((qr) => qr.status === filter)
@@ -74,7 +84,7 @@ export function DashboardPage() {
           </article>
           <article className="stat-card">
             <span>Abonnement</span>
-            <strong>Essai</strong>
+            <strong>Bientôt disponible</strong>
           </article>
         </div>
 
@@ -97,8 +107,12 @@ export function DashboardPage() {
             </div>
           </div>
 
-          <div className="table-list" role="list" aria-labelledby="qr-list-title">
-            {filteredQrList.length === 0 ? (
+          <div className="table-list" role="list" aria-labelledby="qr-list-title" aria-busy={loading}>
+            {loading ? (
+              <p role="status">Chargement de vos TAGGO...</p>
+            ) : loadError ? (
+              <p role="alert" className="form-error">{loadError}</p>
+            ) : filteredQrList.length === 0 ? (
               <EmptyState
                 title="Aucun QR code trouvé"
                 description="Créez votre premier QR TAGGO pour commencer."
@@ -117,7 +131,7 @@ export function DashboardPage() {
                 <article key={qr.id} role="listitem" className="qr-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                      <p className="qr-id">{qr.id}</p>
+                      <p className="qr-id">{qr.publicId}</p>
                       <h3>{qr.title}</h3>
                     </div>
                     <div className="pill-row">
