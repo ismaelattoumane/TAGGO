@@ -2,16 +2,17 @@ import { isValidDestinationUrl, sanitizeText } from '../../lib/validators'
 import { supabase } from '../../lib/supabase'
 import { buildTagCode } from './tagCode'
 import type { QrRepository } from './QrRepository'
-import type { CreateQrInput, QrRecord, UpdateQrInput } from './qrTypes'
+import type { CreateQrInput, PublicTaggoState, QrRecord, UpdateQrInput } from './qrTypes'
 import { toPublicTaggoProfile, type PublicProfileInput, type PublicProfileRecord, type PublicTaggoProfile } from './publicProfile'
 
 type SupabaseQr = {
   id: string
   public_id: string
-  owner_id: string
+  owner_id: string | null
   title: string | null
   destination_url: string | null
   status: QrRecord['status']
+  lifecycle_status: QrRecord['lifecycleStatus']
   created_at: string
   updated_at: string | null
 }
@@ -32,7 +33,8 @@ function toRecord(row: SupabaseQr): QrRecord {
   return {
     id: row.id,
     publicId: row.public_id,
-    ownerId: row.owner_id,
+    ownerId: row.owner_id ?? undefined,
+    lifecycleStatus: row.lifecycle_status,
     title: row.title ?? '',
     destinationUrl: row.destination_url ?? '',
     status: row.status,
@@ -87,6 +89,23 @@ export class SupabaseQrRepository implements QrRepository {
     return (await this.getByPublicId(publicId))?.status ?? null
   }
 
+  async getPublicTaggoState(publicId: string): Promise<PublicTaggoState> {
+    const { data, error } = await requireClient().rpc('get_public_taggo_state', {
+      p_public_id: publicId.trim().toUpperCase(),
+    })
+    if (error) throw error
+    return (data as PublicTaggoState) ?? 'not_found'
+  }
+
+  async activate(publicId: string, ownerId: string): Promise<QrRecord | null> {
+    if (!ownerId) return null
+    const { data, error } = await requireClient().rpc('activate_taggo', {
+      p_public_id: publicId.trim().toUpperCase(),
+    })
+    if (error) throw error
+    return data ? toRecord(data as SupabaseQr) : null
+  }
+
   async getPublicProfile(qrId: string, ownerId?: string): Promise<PublicProfileRecord | null> {
     if (!ownerId || !(await this.getById(qrId, ownerId))) return null
     const { data, error } = await requireClient()
@@ -134,6 +153,7 @@ export class SupabaseQrRepository implements QrRepository {
       title: values.title,
       destination_url: values.destinationUrl,
       is_public: false,
+      lifecycle_status: 'activated',
     }).select('*').single()
     if (error) throw error
     return toRecord(data as SupabaseQr)
@@ -149,6 +169,11 @@ export class SupabaseQrRepository implements QrRepository {
       title: values.title,
       destination_url: values.destinationUrl,
       status,
+      lifecycle_status: status === 'active'
+        ? 'active'
+        : status === 'inactive'
+          ? 'inactive'
+          : current.lifecycleStatus ?? 'activated',
       is_public: status === 'active',
     }).eq('id', id).eq('owner_id', ownerId).select('*').maybeSingle()
     if (error) throw error
