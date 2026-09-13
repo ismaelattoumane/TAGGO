@@ -1,202 +1,85 @@
-# TAGGO — MVP v1.1.0 Production-Ready
+# TAGGO MVP
 
-TAGGO est une plateforme de gestion de QR codes avec authentification, persistance de données, et pages publiques accessibles.
+## Description
 
-**🎯 Statut**: ✅ **Production-Ready Demo** — Toutes les fonctionnalités MVP implémentées, testées, et fonctionnelles.
+TAGGO permet à un propriétaire de gérer ses QR codes de vêtements connectés et la destination publique associée à chaque code.
 
-**📊 Métriques**: 
-- 8/8 tests passés ✅
-- Bundle: 513 KB (minified), 149 KB (gzip)
-- 85 modules compilés
-- 7 pages complémentées + 404
+## Stack
 
-TAGGO est une marque de vêtements connectés basée sur une expérience public via QR code et un espace utilisateur dédié.
+- React 19, TypeScript, Vite et React Router
+- Supabase Auth et PostgreSQL avec RLS en production
+- Vitest et Testing Library
+- Mode local de démonstration sans backend configuré
 
-## Stack Technique
-
-- **React 19** + TypeScript + Vite
-- **React Router** pour la navigation
-- **Supabase** (optionnel, pour la production)
-- **Vitest** + Testing Library pour les tests
-- **localStorage** pour la persistance démo
-
-## Structure du Projet
-
-```
-src/
-├── app/              # Routing et configuration
-├── components/       # Composants réutilisables
-├── context/          # Contextes React (Auth)
-├── lib/              # Utilitaires (validators, auth démo, etc.)
-├── pages/            # Pages de l'application
-├── services/         # Logique métier
-└── main.tsx          # Point d'entrée
-
-docs/
-├── ARCHITECTURE.md   # Architecture technique détaillée
-├── DECISIONS.md      # Décisions de design
-├── DEMO.md          # Guide de démonstration
-├── ROADMAP.md       # Phases de développement
-├── STATUS.md        # État de progression
-└── DEVELOPMENT.md   # Guide de développement
-```
-
-## Documentation
-
-| Document | Contenu |
-|----------|---------|
-| **[DEMO.md](docs/DEMO.md)** | Comment tester l'app, comptes démo, flux utilisateur |
-| **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** | Architecture technique et design system |
-| **[ROADMAP.md](docs/ROADMAP.md)** | Phases de développement et statut |
-| **[STATUS.md](docs/STATUS.md)** | État complet du projet, tâches complétées et à faire |
-| **[DECISIONS.md](docs/DECISIONS.md)** | Décisions de design et justifications |
-| **[CHANGELOG.md](docs/CHANGELOG.md)** | Histoire des versions et changements |
-| **[PERFORMANCE.md](docs/PERFORMANCE.md)** | Guide d'optimisation et métriques |
-
-## 🚀 Démarrage Rapide
+## Installation
 
 ```bash
-# Installer les dépendances
 npm install
-
-# Lancer le serveur de développement
-npm run dev
-
-# Accédez à http://localhost:5173
+cp .env.example .env.local
 ```
 
-### Connexion Rapide
-1. Allez à `/login`
-2. Cliquez sur un compte de démonstration (ex: `demo@taggo.local`)
-3. Explorez le dashboard et créez des QR codes
+## Variables d'environnement
 
-**Voir [docs/DEMO.md](docs/DEMO.md) pour les détails complets sur les comptes de test.**
+Le mode production nécessite :
 
-## Commandes Disponibles
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+La clé utilisée est exclusivement la clé publique anon Supabase. Ne jamais exposer une clé service role.
+
+## Développement
 
 ```bash
-# Développement
-npm run dev          # Lancer le serveur local (avec hot reload)
-
-# Tests
-npm test             # Lancer les tests en mode watch
-npm test -- --run    # Lancer les tests une seule fois
-
-# Build
-npm run build        # Compiler pour la production
-npm run preview      # Prévisualiser le build production
-
-# Linting
-npm run lint         # Vérifier la qualité du code
+npm run dev
 ```
 
-## 🆕 Quoi de Neuf (v1.1.0)
+Sans variables Supabase, l'application démarre en mode démo local. Ce mode ne doit pas être utilisé pour de vrais comptes : les données sont stockées dans `localStorage`.
 
-- ✨ **Suppression de QR codes** avec confirmation
-- 🔍 **Filtrage par statut** dans le dashboard
-- 📋 **Liens publics copiables** en un clic
-- 🎨 **Page 404 personnalisée** au lieu de redirection
-- 🚀 **Alert component** réutilisable pour notifications
-- 📊 **Stats améliorées** (total QR codes)
+## Production
 
-Voir [CHANGELOG.md](docs/CHANGELOG.md) pour plus de détails.
+```bash
+npm run typecheck
+npm test
+npm run build
+npm run preview
+```
 
-## Mode Démonstration vs Production
+Avant le déploiement, exécuter [supabase/schema.sql](supabase/schema.sql) dans le projet Supabase et configurer les deux variables d'environnement.
 
-### Mode Démonstration (Courant)
-✅ Fonctionne sans Supabase configuré  
-✅ Authentification locale avec comptes pré-créés  
-✅ QR codes stockés dans localStorage  
-✅ Parfait pour développement et tests  
+## Architecture
 
-**Utilisez ce mode pour :**
-- Tester le flux utilisateur complet
-- Développer des nouvelles fonctionnalités
-- Déboguer sans backend configuré
+`src/app` contient le routage, `src/context` la session, `src/features/auth` et `src/features/qr` les repositories, et `src/pages` les écrans MVP. Le repository choisi dépend de la configuration : Supabase en environnement configuré, local uniquement en démo.
 
-### Mode Production (À venir)
-Requiert Supabase configuré pour :
-- Authentification réelle
-- Persistance en base de données
-- Sécurité accrue (RLS, HTTPS, etc.)
-- Multi-utilisateurs réels
+## Routes principales
 
-## Configuration Supabase
+- `/` : redirection vers `/login` ou `/dashboard`
+- `/login`, `/register` : authentification
+- `/dashboard`, `/dashboard/settings`, `/dashboard/qr/new`, `/dashboard/qr/:qrId` : espace privé
+- `/t/:tag` : page QR publique
+- `/qr/:publicId` : compatibilité avec les anciens QR
+- `*` : page 404
 
-Pour connecter Supabase :
+## Fonctionnement QR
 
-1. Créez un projet sur [supabase.com](https://supabase.com)
-2. Copiez vos credentials dans `.env.local` :
-   ```env
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-key-here
-   ```
-3. Déployez le schéma : exécutez `supabase/schema.sql` dans l'éditeur SQL Supabase
-4. Redémarrez l'app
-
-L'app basculera automatiquement vers Supabase au lieu du stockage local.
-
-## Fonctionnalités
-
-- ✅ Authentification (locale démo ou Supabase)
-- ✅ Création et modification de QR codes
-- ✅ Pages publiques pour consulter les QR codes (sans connexion)
-- ✅ Identifiants publics non-énumérables
-- ✅ Validation des données côté client
-- ✅ Tests complets
+Un QR public utilise un identifiant `TGG-XXXXXXX`. Seuls les QR `active`, avec destination HTTPS/HTTP valide et publication activée, sont résolus publiquement. La destination est ouverte dans un nouvel onglet ; les codes inexistants, inactifs ou mal configurés affichent un état propre.
 
 ## Sécurité
 
-- ❌ Ne JAMAIS stocker de secrets dans le frontend
-- ✅ Séparation des données publiques vs privées
-- ✅ Identifiants publics non-énumérables (`TGG-XXXXXXX`)
-- ✅ Validation stricte des entrées utilisateur
-- ✅ Sanitization du contenu texte
-- 🔄 RLS Supabase (à implémenter en production)
+- Authentification Supabase et sessions persistantes en production
+- RLS sur les profils, QR codes et abonnements
+- Contrôle propriétaire sur chaque lecture, modification et suppression
+- Validation URL limitée aux schémas `http:` et `https:`
+- Aucune valeur secrète dans le frontend ou le repository
+- Pages privées marquées `noindex`
 
-## Troubleshooting
+## Déploiement
 
-**Q: L'app n'ouvre pas après `npm run dev`?**  
-→ Vérifiez que le port 5173 est disponible, ou changez-le avec `--host`
+Déployer le contenu de `dist` sur un hébergeur statique configuré pour servir `index.html` comme fallback SPA. Les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` doivent être définies au moment du build. Activer HTTPS et les headers de sécurité chez l'hébergeur.
 
-**Q: Les données disparaissent après rechargement?**  
-→ Vérifiez que localStorage n'est pas désactivé (pas de mode incognito)
+## Limitations connues
 
-**Q: Comment réinitialiser les données démo?**  
-→ Ouvrez DevTools (F12) et exécutez :
-```javascript
-localStorage.clear()
-```
-
-## Variables d'Environnement
-
-Voir `.env.example` pour le template complet.
-
-```env
-# Optionnel - Supabase (pour la production)
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-```
-
-## Contribution
-
-Consultez [DEVELOPMENT.md](docs/DEVELOPMENT.md) pour les conventions de code et le workflow de développement.
-
-## Licence
-
-À définir
-
-## Contact
-
-Pour les questions sur ce projet, consultez la documentation complète dans le dossier `docs/`.
-
----
-
-**Statut du projet**: ✅ MVP v1.1.0 Production-Ready | [Voir le STATUS complet](docs/STATUS.md)
-
-**Prêt pour**: 
-- ✅ Démonstration et tests utilisateurs
-- ✅ Développement d'autres features
-- ✅ Déploiement sur Supabase backend
-
-**Prochaines étapes**: Supabase integration → Code splitting → Analytics → Advanced features (v2.0)
+- Le mode local est une démonstration uniquement et ne fournit pas une sécurité serveur.
+- La génération d'image QR imprimable et la réinitialisation de mot de passe ne font pas partie de ce MVP.
+- Le bundle inclut encore Three.js et dépasse le seuil de warning Vite ; cela n'empêche pas le fonctionnement du MVP.

@@ -71,5 +71,3 @@ export class LocalAuthRepository implements AuthRepository {
   }
 }
 
-/** Shared singleton. Swap with SupabaseAuthRepository later without touching callers. */
-export const authRepository: AuthRepository = new LocalAuthRepository()

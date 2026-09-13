@@ -12,14 +12,14 @@ import type { CreateQrInput, QrRecord, UpdateQrInput } from './qrTypes'
 export class LocalQrRepository implements QrRepository {
   list(ownerId?: string): QrRecord[] {
     const qrs = readStore()
-    const scoped = ownerId ? qrs.filter((qr) => !qr.ownerId || qr.ownerId === ownerId) : qrs
+    const scoped = ownerId ? qrs.filter((qr) => qr.ownerId === ownerId) : qrs
     return scoped.map(toRecord)
   }
 
   getById(id: string, ownerId?: string): QrRecord | null {
     const qr = readStore().find((item) => item.id === id) ?? null
     if (!qr) return null
-    if (ownerId && qr.ownerId && qr.ownerId !== ownerId) return null
+    if (ownerId && qr.ownerId !== ownerId) return null
     return toRecord(qr)
   }
 
@@ -67,7 +67,7 @@ export class LocalQrRepository implements QrRepository {
     const index = qrs.findIndex((qr) => qr.id === id)
     if (index === -1) return null
     const current = qrs[index]
-    if (ownerId && current.ownerId && current.ownerId !== ownerId) return null
+    if (ownerId && current.ownerId !== ownerId) return null
     const title = updates.title !== undefined ? sanitizeText(updates.title).slice(0, 80) : current.title
     const destinationUrl =
       updates.destinationUrl !== undefined ? updates.destinationUrl.trim() : current.destinationUrl
@@ -91,12 +91,10 @@ export class LocalQrRepository implements QrRepository {
     const qrs = readStore()
     const index = qrs.findIndex((qr) => qr.id === id)
     if (index === -1) return false
-    if (ownerId && qrs[index].ownerId && qrs[index].ownerId !== ownerId) return false
+    if (ownerId && qrs[index].ownerId !== ownerId) return false
     qrs.splice(index, 1)
     writeStore(qrs)
     return true
   }
 }
 
-/** Shared singleton. Swap with SupabaseQrRepository later without touching callers. */
-export const qrRepository: QrRepository = new LocalQrRepository()

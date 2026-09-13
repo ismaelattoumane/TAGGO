@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { qrRepository } from '../features/qr/LocalQrRepository'
+import { qrRepository } from '../features/qr/repository'
 import type { QrRecord } from '../features/qr/qrTypes'
 import { CopyButton } from '../components/CopyButton'
 import { Badge } from '../components/ui/Badge/Badge'
@@ -17,10 +18,10 @@ export function DashboardPage() {
 
   useEffect(() => {
     const load = async () => {
-      setQrList(await qrRepository.list())
+      setQrList(await qrRepository.list(user?.id))
     }
-    void load()
-  }, [])
+    if (user) void load()
+  }, [user])
 
   const filteredQrList = filter === 'all' ? qrList : qrList.filter((qr) => qr.status === filter)
 
@@ -42,9 +43,9 @@ export function DashboardPage() {
         </div>
 
         <nav className="nav" aria-label="Navigation principale">
-          <a href="/dashboard" className="nav-item active" aria-current="page">Dashboard</a>
-          <a href="/dashboard/qr/new" className="nav-item">QR Codes</a>
-          <a href="/dashboard/settings" className="nav-item">Paramètres</a>
+          <Link to="/dashboard" className="nav-item active" aria-current="page">Dashboard</Link>
+          <Link to="/dashboard/qr/new" className="nav-item">QR Codes</Link>
+          <Link to="/dashboard/settings" className="nav-item">Paramètres</Link>
         </nav>
 
         <button type="button" className="ghost-button" onClick={handleSignOut} style={{ marginTop: '1.5rem' }}>
@@ -59,7 +60,7 @@ export function DashboardPage() {
             <h1>Mes QR TAGGO</h1>
             <p style={{ marginTop: '0.5rem', color: '#6d597a' }}>Connecté en tant que {user?.email ?? 'Utilisateur'}</p>
           </div>
-          <a href="/dashboard/qr/new" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Créer un QR</a>
+          <Link to="/dashboard/qr/new" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Créer un QR</Link>
         </header>
 
         <div className="stats-grid">
@@ -102,13 +103,13 @@ export function DashboardPage() {
                 title="Aucun QR code trouvé"
                 description="Créez votre premier QR TAGGO pour commencer."
                 action={
-                  <a
-                    href="/dashboard/qr/new"
+                  <Link
+                    to="/dashboard/qr/new"
                     className="primary-button"
                     style={{ textDecoration: 'none', display: 'inline-block' }}
                   >
                     Créer le premier
-                  </a>
+                  </Link>
                 }
               />
             ) : (
@@ -134,9 +135,9 @@ export function DashboardPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <a href={`/dashboard/qr/${qr.id}`} className="link-button">
+                    <Link to={`/dashboard/qr/${qr.id}`} className="link-button">
                       Éditer
-                    </a>
+                    </Link>
                     <CopyButton text={getPublicQrUrl(qr.publicId)} label="Copier lien" />
                   </div>
                 </article>

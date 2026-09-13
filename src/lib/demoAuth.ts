@@ -128,11 +128,13 @@ export function seedDemoUsers() {
   if (users.size === 0) {
     const demoUsers = [
       {
+        id: 'demo-user',
         email: 'demo@taggo.local',
         password: 'DemoPass123!',
         fullName: 'Demo User',
       },
       {
+        id: 'test-user',
         email: 'test@taggo.local',
         password: 'TestPass123!',
         fullName: 'Test Account',

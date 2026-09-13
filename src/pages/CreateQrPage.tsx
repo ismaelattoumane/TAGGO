@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
-import { qrRepository } from '../features/qr/LocalQrRepository'
+import { qrRepository } from '../features/qr/repository'
 
 export function CreateQrPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [title, setTitle] = useState('')
   const [destinationUrl, setDestinationUrl] = useState('')
   const [message, setMessage] = useState('')
@@ -24,6 +26,7 @@ export function CreateQrPage() {
       const newQr = await qrRepository.create({
         title: cleanedTitle,
         destinationUrl,
+        ownerId: user?.id,
       })
       setMessage('QR créé avec succès.')
       setTimeout(() => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { qrRepository } from '../features/qr/LocalQrRepository'
+import { qrRepository } from '../features/qr/repository'
 import type { QrRecord } from '../features/qr/qrTypes'
 import { Alert } from '../components/Alert'
 
@@ -22,6 +22,17 @@ export function PublicQrPage() {
     void load()
   }, [code])
 
+  useEffect(() => {
+    if (!qr || qr.status !== 'active') return
+    document.title = `${qr.title} — TAGGO`
+    const robots = document.querySelector('meta[name="robots"]')
+    robots?.setAttribute('content', 'index, follow')
+    return () => {
+      document.title = 'TAGGO — Gestion des QR codes'
+      robots?.setAttribute('content', 'noindex, nofollow')
+    }
+  }, [qr])
+
   if (!loaded) {
     return (
       <main className="public-page">
@@ -42,9 +53,21 @@ export function PublicQrPage() {
           <Alert type="error">
             Ce code n'existe pas ou n'est plus actif. Vérifiez que l'identifiant public est correct.
           </Alert>
-          <a href="/login" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          <a href={`${import.meta.env.BASE_URL}login`} className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
             Retourner à l'accueil
           </a>
+        </section>
+      </main>
+    )
+  }
+
+  if (qr.status !== 'active') {
+    return (
+      <main className="public-page">
+        <section className="public-card">
+          <p className="eyebrow">QR public</p>
+          <h1>QR temporairement indisponible</h1>
+          <Alert type="error">Ce TAGGO n'est pas actif pour le moment.</Alert>
         </section>
       </main>
     )
