@@ -1,0 +1,53 @@
+.taggo-field {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: var(--text-label);
+}
+
+.taggo-field__control {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.taggo-field__control::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.taggo-field__control:focus {
+  outline: 2px solid rgba(76, 201, 240, 0.4);
+  border-color: var(--color-focus);
+}
+
+.taggo-field__control:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.taggo-field__control--error {
+  border-color: var(--color-error-border);
+}
+
+.taggo-field__control:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.taggo-field__error {
+  color: var(--color-error);
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+}
+
+.taggo-field__hint {
+  color: var(--color-text-muted);
+  font-weight: 400;
+  font-size: var(--text-body-sm);
+}

@@ -1,0 +1,31 @@
+.taggo-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-full);
+  padding: 0.35rem 0.7rem;
+  font-size: var(--text-caption);
+  text-transform: capitalize;
+  font-weight: 700;
+  background: rgba(111, 45, 168, 0.08);
+  color: var(--color-primary);
+}
+
+.taggo-badge--active {
+  background: rgba(76, 201, 240, 0.14);
+  color: var(--taggo-navy);
+}
+
+.taggo-badge--draft {
+  background: rgba(244, 201, 93, 0.18);
+  color: var(--color-text-muted);
+}
+
+.taggo-badge--inactive {
+  background: rgba(43, 45, 66, 0.08);
+  color: var(--color-text-muted);
+}
+
+.taggo-badge--archived {
+  background: rgba(181, 101, 118, 0.14);
+  color: var(--color-secondary);
+}

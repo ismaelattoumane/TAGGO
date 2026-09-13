@@ -1,0 +1,146 @@
+/* ---------- TAGGO Concept Section ---------- */
+
+.taggo-concept-section {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(111, 45, 168, 0.03) 100%
+  );
+}
+
+.taggo-concept-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-6) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.taggo-concept-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-body);
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.taggo-concept-list__icon {
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ---- Visual flow ---- */
+.taggo-concept-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.taggo-concept-flow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+}
+
+.taggo-concept-flow__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.taggo-concept-flow__label {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.taggo-concept-flow__arrow {
+  font-size: 1.25rem;
+  color: var(--color-primary);
+  opacity: 0.5;
+}
+
+/* QR grid visual */
+.taggo-qr-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  width: 60px;
+  height: 60px;
+  padding: 6px;
+  background: #fff;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--color-text);
+}
+
+.taggo-qr-grid span {
+  background: var(--color-text);
+  border-radius: 1px;
+}
+
+/* Shirt icon */
+.taggo-concept-flow__shirt {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    135deg,
+    rgba(111, 45, 168, 0.08),
+    rgba(181, 101, 118, 0.08)
+  );
+}
+
+.taggo-concept-flow__shirt-icon {
+  font-size: 1.75rem;
+}
+
+/* Profile avatar */
+.taggo-concept-flow__profile {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    rgba(76, 201, 240, 0.1),
+    rgba(111, 45, 168, 0.1)
+  );
+}
+
+.taggo-concept-flow__avatar {
+  font-size: 1.5rem;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 430px) {
+  .taggo-concept-flow {
+    padding: 1rem;
+    gap: 0.6rem;
+  }
+
+  .taggo-qr-grid,
+  .taggo-concept-flow__shirt,
+  .taggo-concept-flow__profile {
+    width: 48px;
+    height: 48px;
+  }
+
+  .taggo-concept-flow__arrow {
+    font-size: 1rem;
+  }
+}

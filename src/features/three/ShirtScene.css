@@ -1,0 +1,19 @@
+.taggo-shirt-scene {
+  width: 100%;
+  height: 100%;
+}
+
+.taggo-shirt-scene canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.taggo-shirt-fallback {
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--color-border, rgba(43, 45, 66, 0.12));
+  border-radius: var(--radius-xl, 16px);
+  color: var(--color-text-muted, #6d597a);
+  text-align: center;
+  font-size: var(--text-body-sm, 0.875rem);
+}

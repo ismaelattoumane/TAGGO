@@ -1,10 +1,17 @@
 /**
- * Local demo authentication storage
- * 
+ * Local demo authentication storage — DEMO ONLY, NOT PRODUCTION SAFE.
+ *
  * This module provides a fallback authentication mechanism when Supabase is not available.
  * It stores user sessions in localStorage and provides a simple sign-in/sign-up experience.
- * 
- * In production, this should be replaced with real Supabase authentication.
+ *
+ * SECURITY LIMITATIONS (demo only):
+ * - passwords are stored in CLEAR TEXT in `taggo-demo-users`;
+ * - no hashing is applied on purpose (a home-made hash would be insecure theater);
+ * - sessions are plain JSON in `taggo-demo-auth` with no expiry/signature;
+ * - real security comes later with Supabase Auth (server-side hashing, JWT, RLS).
+ *
+ * In production, this must be replaced with real Supabase authentication
+ * behind `AuthRepository` (`SupabaseAuthRepository`).
  */
 
 export type LocalAuthUser = {

@@ -1,0 +1,72 @@
+/* ---------- TAGGO QR Section ---------- */
+
+.taggo-qr-section {
+  background: linear-gradient(
+    180deg,
+    rgba(111, 45, 168, 0.03) 0%,
+    transparent 100%
+  );
+}
+
+/* ---- QR visual ---- */
+.taggo-qr-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.taggo-qr-frame {
+  padding: 1rem;
+  background: #fff;
+  border-radius: var(--radius-xl);
+  border: 2px solid var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.taggo-qr-frame__img {
+  display: block;
+  width: 180px;
+  height: 180px;
+}
+
+.taggo-qr-caption {
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ---- List ---- */
+.taggo-qr-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-6) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.taggo-qr-list__item {
+  position: relative;
+  padding-left: 1.5rem;
+  font-size: var(--text-body);
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+}
+
+.taggo-qr-list__item::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 430px) {
+  .taggo-qr-frame__img {
+    width: 140px;
+    height: 140px;
+  }
+}

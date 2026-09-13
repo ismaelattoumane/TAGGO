@@ -9,7 +9,7 @@ export function CopyButton({ text, label = 'Copier' }: { text: string; label?: s
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      console.error('Failed to copy')
+      setCopied(false)
     }
   }
 
@@ -17,8 +17,9 @@ export function CopyButton({ text, label = 'Copier' }: { text: string; label?: s
     <button
       type="button"
       className="ghost-button"
-      onClick={handleCopy}
+      onClick={() => void handleCopy()}
       style={{ fontSize: '0.875rem' }}
+      aria-live="polite"
     >
       {copied ? '✓ Copié!' : label}
     </button>

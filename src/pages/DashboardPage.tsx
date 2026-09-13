@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { getDemoQrs } from '../lib/demoData'
+import { qrRepository } from '../features/qr/LocalQrRepository'
+import type { QrRecord } from '../features/qr/qrTypes'
 import { CopyButton } from '../components/CopyButton'
+import { Badge } from '../components/ui/Badge/Badge'
+import { EmptyState } from '../components/ui/State/State'
+import { Eyebrow } from '../components/ui/Typography/Typography'
+import { SelectField } from '../components/ui/Field/Field'
 
 export function DashboardPage() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
-  const [qrList, setQrList] = useState(getDemoQrs())
+  const [qrList, setQrList] = useState<QrRecord[]>([])
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'inactive' | 'archived'>('all')
 
   useEffect(() => {
-    setQrList(getDemoQrs())
+    const load = async () => {
+      setQrList(await qrRepository.list())
+    }
+    void load()
   }, [])
 
   const filteredQrList = filter === 'all' ? qrList : qrList.filter((qr) => qr.status === filter)
@@ -23,7 +31,7 @@ export function DashboardPage() {
 
   const getPublicQrUrl = (publicId: string) => {
     const baseUrl = window.location.origin
-    return `${baseUrl}/qr/${publicId}`
+    return `${baseUrl}/t/${publicId}`
   }
 
   return (
@@ -33,9 +41,9 @@ export function DashboardPage() {
           <span className="brand-mark">TAGGO</span>
         </div>
 
-        <nav className="nav">
-          <a href="/dashboard" className="nav-item active">Dashboard</a>
-          <a href="/dashboard/qr" className="nav-item">QR Codes</a>
+        <nav className="nav" aria-label="Navigation principale">
+          <a href="/dashboard" className="nav-item active" aria-current="page">Dashboard</a>
+          <a href="/dashboard/qr/new" className="nav-item">QR Codes</a>
           <a href="/dashboard/settings" className="nav-item">Paramètres</a>
         </nav>
 
@@ -47,7 +55,7 @@ export function DashboardPage() {
       <section className="main-panel">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Tableau de bord</p>
+            <Eyebrow>Tableau de bord</Eyebrow>
             <h1>Mes QR TAGGO</h1>
             <p style={{ marginTop: '0.5rem', color: '#6d597a' }}>Connecté en tant que {user?.email ?? 'Utilisateur'}</p>
           </div>
@@ -71,45 +79,48 @@ export function DashboardPage() {
 
         <section className="panel">
           <div className="panel-header">
-            <h2>Liste des QR</h2>
+            <h2 id="qr-list-title">Liste des QR</h2>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <select
+              <SelectField
+                id="qr-status-filter"
+                label="Filtrer par statut"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as typeof filter)}
-                style={{
-                  padding: '0.5rem',
-                  border: '1px solid #ddd',
-                  borderRadius: '4px',
-                  fontSize: '0.875rem',
-                }}
               >
                 <option value="all">Tous</option>
                 <option value="active">Actifs</option>
                 <option value="draft">Brouillon</option>
                 <option value="inactive">Inactifs</option>
                 <option value="archived">Archivés</option>
-              </select>
+              </SelectField>
             </div>
           </div>
 
-          <div className="table-list">
+          <div className="table-list" role="list" aria-labelledby="qr-list-title">
             {filteredQrList.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#999' }}>
-                <p>Aucun QR code trouvé</p>
-                <a href="/dashboard/qr/new" className="primary-button" style={{ marginTop: '1rem', textDecoration: 'none', display: 'inline-block' }}>
-                  Créer le premier
-                </a>
-              </div>
+              <EmptyState
+                title="Aucun QR code trouvé"
+                description="Créez votre premier QR TAGGO pour commencer."
+                action={
+                  <a
+                    href="/dashboard/qr/new"
+                    className="primary-button"
+                    style={{ textDecoration: 'none', display: 'inline-block' }}
+                  >
+                    Créer le premier
+                  </a>
+                }
+              />
             ) : (
               filteredQrList.map((qr) => (
-                <article key={qr.id} className="qr-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <article key={qr.id} role="listitem" className="qr-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                       <p className="qr-id">{qr.id}</p>
                       <h3>{qr.title}</h3>
                     </div>
                     <div className="pill-row">
-                      <span className={`status-pill ${qr.status}`}>{qr.status}</span>
+                      <Badge tone={qr.status}>{qr.status}</Badge>
                     </div>
                   </div>
 

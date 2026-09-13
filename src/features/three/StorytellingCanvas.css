@@ -1,0 +1,59 @@
+/* ---------- TAGGO Global Storytelling Canvas ---------- */
+
+.taggo-storytelling-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.1s linear;
+}
+
+.taggo-storytelling-canvas__fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.taggo-storytelling-canvas__fallback::after {
+  content: '';
+  width: 50%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(111, 45, 168, 0.06),
+    transparent 70%
+  );
+  animation: taggo-fade-in 0.5s ease;
+}
+
+@keyframes taggo-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .taggo-storytelling-canvas {
+    /* Under reduced motion, keep the canvas visible but static */
+    transition: none;
+  }
+
+  .taggo-storytelling-canvas__fallback::after {
+    animation: none;
+  }
+}

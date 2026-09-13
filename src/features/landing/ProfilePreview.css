@@ -1,0 +1,126 @@
+/* ---------- TAGGO Profile Preview — QR scan → profile reveal ---------- */
+
+.taggo-profile {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: transparent;
+}
+
+.taggo-profile__card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  padding: 2.5rem 2rem;
+  border-radius: var(--radius-2xl);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Symbolic scan line — sweeps across the card on reveal */
+.taggo-profile__scan {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-primary),
+    transparent
+  );
+  opacity: 0;
+}
+
+.taggo-profile--visible .taggo-profile__scan {
+  animation: taggo-scan 1.4s ease-out forwards;
+}
+
+@keyframes taggo-scan {
+  0% {
+    top: 0;
+    opacity: 1;
+  }
+  50% {
+    top: 100%;
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.taggo-profile__avatar {
+  width: 5rem;
+  height: 5rem;
+  margin: 0 auto 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    rgba(111, 45, 168, 0.12),
+    rgba(181, 101, 118, 0.12)
+  );
+  font-size: 2.25rem;
+}
+
+.taggo-profile__handle {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.taggo-profile__bio {
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-relaxed);
+}
+
+.taggo-profile__links {
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ---------- Desktop ---------- */
+@media (min-width: 1025px) {
+  .taggo-profile {
+    padding: 3rem 1.5rem;
+  }
+
+  .taggo-profile__card {
+    max-width: 400px;
+    padding: 3rem 2.5rem;
+  }
+
+  .taggo-profile__links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .taggo-profile__card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .taggo-profile__scan {
+    display: none;
+  }
+}

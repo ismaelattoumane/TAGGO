@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
-import { getDemoQrById, updateDemoQr, deleteDemoQr } from '../lib/demoData'
+import { qrRepository } from '../features/qr/LocalQrRepository'
 
 export function QrDetailPage() {
   const { qrId } = useParams()
@@ -15,27 +15,30 @@ export function QrDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
-    if (!qrId) {
-      setMessage('QR non trouvé.')
-      setLoading(false)
-      return
-    }
+    const load = async () => {
+      if (!qrId) {
+        setMessage('QR non trouvé.')
+        setLoading(false)
+        return
+      }
 
-    const qr = getDemoQrById(qrId)
-    if (!qr) {
-      setMessage('QR non trouvé.')
-      setLoading(false)
-      return
-    }
+      const qr = await qrRepository.getById(qrId)
+      if (!qr) {
+        setMessage('QR non trouvé.')
+        setLoading(false)
+        return
+      }
 
-    setTitle(qr.title)
-    setDestinationUrl(qr.destinationUrl)
-    setStatus(qr.status)
-    setPublicId(qr.publicId)
-    setLoading(false)
+      setTitle(qr.title)
+      setDestinationUrl(qr.destinationUrl)
+      setStatus(qr.status)
+      setPublicId(qr.publicId)
+      setLoading(false)
+    }
+    void load()
   }, [qrId])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!qrId) return
 
     const cleanedTitle = sanitizeText(title)
@@ -46,7 +49,7 @@ export function QrDetailPage() {
       return
     }
 
-    const updated = updateDemoQr(qrId, {
+    const updated = await qrRepository.update(qrId, {
       title: cleanedTitle,
       destinationUrl,
       status,
@@ -62,10 +65,10 @@ export function QrDetailPage() {
     }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!qrId) return
 
-    if (deleteDemoQr(qrId)) {
+    if (await qrRepository.remove(qrId)) {
       setMessage('QR supprimé avec succès.')
       setTimeout(() => {
         navigate('/dashboard')
@@ -92,19 +95,35 @@ export function QrDetailPage() {
         <h1>{publicId}</h1>
 
         <div className="auth-form" style={{ marginTop: '1.5rem' }}>
-          <label>
+          <label htmlFor="qr-title">
             Nom du QR
-            <input value={title} onChange={(event) => setTitle(event.target.value)} />
+            <input
+              id="qr-title"
+              name="qrTitle"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
           </label>
 
-          <label>
+          <label htmlFor="qr-destination">
             Destination publique
-            <input value={destinationUrl} onChange={(event) => setDestinationUrl(event.target.value)} />
+            <input
+              id="qr-destination"
+              name="qrDestination"
+              type="url"
+              inputMode="url"
+              value={destinationUrl}
+              onChange={(event) => setDestinationUrl(event.target.value)}
+            />
           </label>
 
-          <label>
+          <label htmlFor="qr-status">
             Statut
-            <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
+            <select
+              id="qr-status"
+              value={status}
+              onChange={(event) => setStatus(event.target.value as typeof status)}
+            >
               <option value="draft">draft</option>
               <option value="active">active</option>
               <option value="inactive">inactive</option>
@@ -112,10 +131,14 @@ export function QrDetailPage() {
             </select>
           </label>
 
-          {message ? <p className="form-error">{message}</p> : null}
+          {message ? (
+            <p role="status" className="form-error">
+              {message}
+            </p>
+          ) : null}
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button type="button" className="primary-button" onClick={handleSave}>
+            <button type="button" className="primary-button" onClick={() => void handleSave()}>
               Enregistrer
             </button>
             <button
@@ -140,7 +163,7 @@ export function QrDetailPage() {
                 <button
                   type="button"
                   className="ghost-button"
-                  onClick={handleDelete}
+                  onClick={() => void handleDelete()}
                   style={{ color: '#d32f2f' }}
                 >
                   Supprimer définitivement

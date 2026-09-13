@@ -1,0 +1,111 @@
+/* ============================================================
+   TAGGO Landing — shared section primitives
+   ============================================================ */
+
+/* ---- Landing shell ---- */
+.taggo-landing {
+  position: relative;
+  z-index: 10;
+}
+
+/* ---- Scroll reveal (IntersectionObserver driven) ---- */
+.taggo-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+}
+
+.taggo-reveal--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taggo-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---- Section heading ---- */
+.taggo-landing-heading {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: var(--leading-tight);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.taggo-landing-subheading {
+  margin-top: var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-muted);
+  max-width: 60ch;
+}
+
+.taggo-landing-subheading--center {
+  margin-inline: auto;
+}
+
+/* ---- Two-column grid ---- */
+.taggo-landing-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 1025px) {
+  .taggo-landing-grid-2 {
+    grid-template-columns: 1fr 1fr;
+    gap: 3.5rem;
+  }
+}
+
+/* ---- Three-column grid ---- */
+.taggo-landing-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .taggo-landing-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+}
+
+/* ---- Four-column grid ---- */
+.taggo-landing-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .taggo-landing-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1025px) {
+  .taggo-landing-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+}
+
+/* ---- Smooth scroll for anchor links ---- */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

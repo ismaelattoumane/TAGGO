@@ -1,0 +1,68 @@
+/* ---------- TAGGO Hero — HTML content only ---------- */
+
+.taggo-hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.taggo-hero__content {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+  pointer-events: auto;
+}
+
+.taggo-hero__line {
+  display: block;
+}
+
+.taggo-hero__title {
+  margin-top: var(--space-3);
+}
+
+.taggo-hero__subtext {
+  margin-top: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-relaxed);
+}
+
+.taggo-hero__actions {
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ---------- Tablet ---------- */
+@media (min-width: 768px) {
+  .taggo-hero__content {
+    padding-inline: 1.5rem;
+  }
+}
+
+/* ---------- Desktop ---------- */
+@media (min-width: 1025px) {
+  .taggo-hero__content {
+    padding-inline: 2rem;
+    max-width: 50%;
+  }
+
+  .taggo-hero__actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .taggo-hero {
+    /* No special reduced motion needed for static hero */
+  }
+}
