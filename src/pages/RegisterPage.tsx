@@ -43,37 +43,62 @@ export function RegisterPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
-          <label>
+          <label htmlFor="register-fullname">
             Nom complet
             <input
+              id="register-fullname"
+              name="fullName"
               type="text"
+              autoComplete="name"
+              required
+              aria-required="true"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'register-error' : undefined}
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               placeholder="Alex Martin"
             />
           </label>
 
-          <label>
+          <label htmlFor="register-email">
             Email
             <input
+              id="register-email"
+              name="email"
               type="email"
+              autoComplete="email"
+              required
+              aria-required="true"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'register-error' : undefined}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="hello@taggo.com"
             />
           </label>
 
-          <label>
+          <label htmlFor="register-password">
             Mot de passe
             <input
+              id="register-password"
+              name="password"
               type="password"
+              autoComplete="new-password"
+              required
+              aria-required="true"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'register-error' : undefined}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Minimum 8 caractères"
             />
           </label>
 
-          {error ? <p className="form-error">{error}</p> : null}
+          {error ? (
+            <p id="register-error" role="alert" className="form-error">
+              {error}
+            </p>
+          ) : null}
 
           <button type="submit" className="primary-button" disabled={loading}>
             {loading ? 'Création...' : 'S’inscrire'}

@@ -32,7 +32,8 @@ html {
 
 body {
   margin: 0;
-  min-width: 1200px;
+  min-width: 0;
+  overflow-x: hidden;
   background: linear-gradient(180deg, #f5e1da 0%, #fff8f4 100%);
   color: var(--ink);
 }
@@ -67,6 +68,14 @@ p {
   font-weight: 700;
   letter-spacing: 0.12em;
   font-size: 0.72rem;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
 }
 
 .auth-shell,
@@ -164,10 +173,34 @@ p {
   font-weight: 700;
 }
 
+.primary-button:focus-visible,
+.ghost-button:focus-visible,
+.link-button:focus-visible,
+.nav-item:focus-visible,
+.auth-form input:focus-visible,
+.auth-form select:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
 .primary-button:hover,
 .ghost-button:hover,
 .link-button:hover {
   transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-button,
+  .ghost-button,
+  .link-button {
+    transition: none;
+  }
+
+  .primary-button:hover,
+  .ghost-button:hover,
+  .link-button:hover {
+    transform: none;
+  }
 }
 
 .auth-link {
@@ -375,4 +408,95 @@ p {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.6);
+}
+
+/* ---------- Responsive (desktop-first existant conservé, mobile ajouté) ---------- */
+
+@media (max-width: 1024px) {
+  .auth-shell,
+  .settings-shell,
+  .public-page {
+    padding: 1.25rem;
+    align-items: flex-start;
+  }
+
+  .auth-panel,
+  .settings-card,
+  .public-card {
+    padding: 1.5rem;
+    border-radius: 22px;
+  }
+
+  .dashboard-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: 0;
+    padding: 1.25rem 1rem;
+  }
+
+  .nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 1rem;
+  }
+
+  .nav-item {
+    text-align: center;
+    padding: 0.7rem 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .main-panel {
+    width: 100%;
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .topbar,
+  .panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qr-row {
+    grid-template-columns: 1fr;
+  }
+
+  .public-meta {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 430px) {
+  .auth-shell,
+  .settings-shell,
+  .public-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .auth-panel,
+  .settings-card,
+  .public-card {
+    padding: 1.25rem 1rem;
+    border-radius: 18px;
+  }
+
+  .nav {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button,
+  .ghost-button {
+    width: 100%;
+    min-height: 3rem;
+  }
+
+  .stat-card strong {
+    font-size: 1.6rem;
+  }
 }

@@ -1,10 +1,37 @@
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getDemoQrByPublicId } from '../lib/demoData'
+import { qrRepository } from '../features/qr/LocalQrRepository'
+import type { QrRecord } from '../features/qr/qrTypes'
 import { Alert } from '../components/Alert'
 
 export function PublicQrPage() {
-  const { publicId } = useParams()
-  const qr = publicId ? getDemoQrByPublicId(publicId) : undefined
+  const { publicId, tag } = useParams()
+  const code = tag ?? publicId
+  const [qr, setQr] = useState<QrRecord | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    const load = async () => {
+      if (!code) {
+        setLoaded(true)
+        return
+      }
+      setQr(await qrRepository.getByPublicId(code))
+      setLoaded(true)
+    }
+    void load()
+  }, [code])
+
+  if (!loaded) {
+    return (
+      <main className="public-page">
+        <section className="public-card">
+          <p className="eyebrow">QR public</p>
+          <h1>Chargement…</h1>
+        </section>
+      </main>
+    )
+  }
 
   if (!qr) {
     return (

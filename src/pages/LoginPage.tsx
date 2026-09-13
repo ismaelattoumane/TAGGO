@@ -65,28 +65,46 @@ export function LoginPage() {
           <h1>Connexion</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <label>
+        <form onSubmit={handleSubmit} className="auth-form" noValidate={false}>
+          <label htmlFor="login-email">
             Email
             <input
+              id="login-email"
+              name="email"
               type="email"
+              autoComplete="email"
+              required
+              aria-required="true"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'login-error' : undefined}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="hello@taggo.com"
             />
           </label>
 
-          <label>
+          <label htmlFor="login-password">
             Mot de passe
             <input
+              id="login-password"
+              name="password"
               type="password"
+              autoComplete="current-password"
+              required
+              aria-required="true"
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'login-error' : undefined}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Votre mot de passe"
             />
           </label>
 
-          {error ? <p className="form-error">{error}</p> : null}
+          {error ? (
+            <p id="login-error" role="alert" className="form-error">
+              {error}
+            </p>
+          ) : null}
 
           <button type="submit" className="primary-button" disabled={loading}>
             {loading ? 'Connexion...' : 'Se connecter'}

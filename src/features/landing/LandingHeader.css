@@ -1,0 +1,173 @@
+/* ---------- TAGGO Landing Header — sticky, minimal, premium ---------- */
+
+.taggo-landing-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-dropdown);
+  background: rgba(245, 225, 218, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--transition-fast);
+}
+
+.taggo-landing-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding: 0.85rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .taggo-landing-header__inner {
+    padding: 0.85rem 1.5rem;
+  }
+}
+
+/* ---- Logo ---- */
+.taggo-landing-header__logo {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.taggo-landing-header__logo-img {
+  display: block;
+  width: auto;
+}
+
+.taggo-landing-header__logo-img--mobile {
+  display: block;
+  height: 2.5rem;
+}
+
+.taggo-landing-header__logo-img--desktop {
+  display: none;
+  height: 2.25rem;
+}
+
+@media (min-width: 768px) {
+  .taggo-landing-header__logo-img--mobile {
+    display: none;
+  }
+
+  .taggo-landing-header__logo-img--desktop {
+    display: block;
+    height: 2.5rem;
+  }
+}
+
+/* ---- Desktop nav ---- */
+.taggo-landing-header__nav {
+  display: none;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.taggo-landing-header__nav-link {
+  font-size: var(--text-body-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.taggo-landing-header__nav-link:hover {
+  color: var(--color-text);
+}
+
+/* ---- CTA ---- */
+.taggo-landing-header__cta {
+  display: none;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* ---- Burger button ---- */
+.taggo-landing-header__burger {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.taggo-landing-header__burger-bar {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-text);
+  transition:
+    transform var(--transition-fast),
+    opacity var(--transition-fast);
+}
+
+.taggo-landing-header__burger:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---- Tablet + Desktop ---- */
+@media (min-width: 768px) {
+  .taggo-landing-header__burger {
+    display: none;
+  }
+
+  .taggo-landing-header__nav {
+    display: flex;
+  }
+
+  .taggo-landing-header__cta {
+    display: inline-flex;
+  }
+}
+
+/* ---- Mobile nav panel ---- */
+.taggo-landing-header__mobile {
+  display: none;
+  flex-direction: column;
+  padding: 1rem;
+  background: rgba(245, 225, 218, 0.97);
+  border-top: 1px solid var(--color-border);
+}
+
+.taggo-landing-header__mobile--open {
+  display: flex;
+}
+
+.taggo-landing-header__mobile-link {
+  padding: 0.85rem 0;
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.taggo-landing-header__mobile-link:hover {
+  color: var(--color-primary);
+}
+
+.taggo-landing-header__mobile-cta {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .taggo-landing-header {
+    transition: none;
+  }
+
+  .taggo-landing-header__burger-bar {
+    transition: none;
+  }
+}

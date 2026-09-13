@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import App from '../App'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { CreateQrPage } from '../pages/CreateQrPage'
@@ -9,13 +9,15 @@ import { PublicQrPage } from '../pages/PublicQrPage'
 import { QrDetailPage } from '../pages/QrDetailPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { SettingsPage } from '../pages/SettingsPage'
+import { LandingPage } from '../features/landing/LandingPage'
+import { TagRedirectPage } from '../pages/TagRedirectPage'
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <Navigate to="/login" replace /> },
+      { index: true, element: <LandingPage /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
       {
@@ -50,7 +52,10 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      { path: 'qr/:publicId', element: <PublicQrPage /> },
+      // Canonical public TAG route.
+      { path: 't/:tag', element: <PublicQrPage /> },
+      // Legacy compatibility: /qr/:publicId -> /t/:tag redirect.
+      { path: 'qr/:publicId', element: <TagRedirectPage /> },
       { path: '404', element: <NotFoundPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],

@@ -1,0 +1,49 @@
+/* ---------- TAGGO Security ---------- */
+
+.taggo-security-section {
+  background: transparent;
+}
+
+.taggo-security-points {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.taggo-security-point {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.taggo-security-point__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(
+    135deg,
+    rgba(76, 201, 240, 0.12),
+    rgba(111, 45, 168, 0.12)
+  );
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.taggo-security-point__title {
+  font-weight: 700;
+  font-size: var(--text-body);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.taggo-security-point__desc {
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-text-muted);
+  margin: 0.2rem 0 0;
+}

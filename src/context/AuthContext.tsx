@@ -1,25 +1,14 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react'
-import { supabase } from '../lib/supabase'
-import {
-  getLocalAuthSession,
-  localSignIn,
-  localSignOut,
-  localSignUp,
-  seedDemoUsers,
-} from '../lib/demoAuth'
-
-type AuthUser = {
-  id: string
-  email: string
-  fullName: string
-}
+import { authRepository } from '../features/auth/LocalAuthRepository'
+import type { AuthUser } from '../features/auth/authTypes'
 
 type AuthContextValue = {
   user: AuthUser | null
@@ -31,152 +20,51 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-let useSupabase = false
-
-// Check if Supabase is available
-try {
-  const hasUrl = import.meta.env.VITE_SUPABASE_URL
-  const hasKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-  useSupabase = Boolean(hasUrl && hasKey)
-} catch {
-  useSupabase = false
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let cancelled = false
     const restoreSession = async () => {
       try {
-        if (useSupabase) {
-          // Try Supabase first
-          const { data } = await supabase.auth.getSession()
-
-          if (data.session?.user) {
-            setUser({
-              id: data.session.user.id,
-              email: data.session.user.email ?? '',
-              fullName: data.session.user.user_metadata?.full_name ?? 'TAGGO User',
-            })
-          }
-        } else {
-          // Fallback to local storage
-          seedDemoUsers()
-          const localUser = getLocalAuthSession()
-          if (localUser) {
-            setUser(localUser)
-          }
-        }
+        const session = await authRepository.getSession()
+        if (!cancelled) setUser(session.user)
       } catch (error) {
         console.warn('Auth restore failed:', error)
-        // Fallback to local auth on error
-        seedDemoUsers()
-        const localUser = getLocalAuthSession()
-        if (localUser) {
-          setUser(localUser)
-        }
+        if (!cancelled) setUser(null)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
       }
     }
-
-    restoreSession()
-
-    if (useSupabase) {
-      const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email ?? '',
-            fullName: session.user.user_metadata?.full_name ?? 'TAGGO User',
-          })
-        } else {
-          setUser(null)
-        }
-      })
-
-      return () => subscription.subscription.unsubscribe()
+    void restoreSession()
+    const unsubscribe = authRepository.onAuthStateChange((session) => {
+      if (!cancelled) setUser(session.user)
+    })
+    return () => {
+      cancelled = true
+      unsubscribe()
     }
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    try {
-      if (useSupabase) {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-        if (error) throw error
-        if (data.user) {
-          setUser({
-            id: data.user.id,
-            email: data.user.email ?? '',
-            fullName: data.user.user_metadata?.full_name ?? 'TAGGO User',
-          })
-        }
-      } else {
-        const user = await localSignIn(email, password)
-        setUser(user)
-      }
-    } catch (error) {
-      console.error('Sign in failed:', error)
-      // Try local auth as fallback
-      try {
-        const user = await localSignIn(email, password)
-        setUser(user)
-      } catch {
-        throw error
-      }
-    }
-  }
+  const signIn = useCallback(async (email: string, password: string) => {
+    const authUser = await authRepository.signIn(email, password)
+    setUser(authUser)
+  }, [])
 
-  const signUp = async (email: string, password: string, fullName: string) => {
-    try {
-      if (useSupabase) {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: fullName } },
-        })
-        if (error) throw error
-        if (data.user) {
-          setUser({
-            id: data.user.id,
-            email: data.user.email ?? '',
-            fullName: data.user.user_metadata?.full_name ?? fullName,
-          })
-        }
-      } else {
-        const user = await localSignUp(email, password, fullName)
-        setUser(user)
-      }
-    } catch (error) {
-      console.error('Sign up failed:', error)
-      // Try local auth as fallback
-      try {
-        const user = await localSignUp(email, password, fullName)
-        setUser(user)
-      } catch {
-        throw error
-      }
-    }
-  }
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+    const authUser = await authRepository.signUp({ email, password, fullName })
+    setUser(authUser)
+  }, [])
 
-  const signOut = async () => {
-    try {
-      if (useSupabase) {
-        const { error } = await supabase.auth.signOut()
-        if (error) throw error
-      }
-    } catch (error) {
-      console.warn('Supabase sign out failed:', error)
-    } finally {
-      localSignOut()
-      setUser(null)
-    }
-  }
+  const signOut = useCallback(async () => {
+    await authRepository.signOut()
+    setUser(null)
+  }, [])
 
   const value = useMemo<AuthContextValue>(
     () => ({ user, loading, signIn, signUp, signOut }),
-    [user, loading],
+    [user, loading, signIn, signUp, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -191,3 +79,4 @@ export function useAuth() {
 
   return context
 }
+

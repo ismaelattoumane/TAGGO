@@ -1,29 +1,24 @@
 import type { ReactNode } from 'react'
+import './Alert.css'
 
 type AlertType = 'success' | 'error' | 'info' | 'warning'
 
-const alertColors = {
-  success: { bg: '#e8f5e9', border: '#4caf50', text: '#2e7d32' },
-  error: { bg: '#ffebee', border: '#f44336', text: '#c62828' },
-  info: { bg: '#e3f2fd', border: '#2196f3', text: '#1565c0' },
-  warning: { bg: '#fff3e0', border: '#ff9800', text: '#e65100' },
+const alertTones: Record<AlertType, string> = {
+  success: 'taggo-alert--success',
+  error: 'taggo-alert--error',
+  info: 'taggo-alert--info',
+  warning: 'taggo-alert--warning',
 }
 
+/**
+ * TAGGO Alert — mêmes couleurs Figma, rôles ARIA corrects, zéro style inline.
+ */
 export function Alert({ type, children }: { type: AlertType; children: ReactNode }) {
-  const colors = alertColors[type]
-
+  const role = type === 'error' || type === 'warning' ? 'alert' : 'status'
   return (
-    <div
-      style={{
-        backgroundColor: colors.bg,
-        borderLeft: `4px solid ${colors.border}`,
-        padding: '1rem',
-        borderRadius: '4px',
-        color: colors.text,
-        marginBottom: '1rem',
-      }}
-    >
+    <div role={role} className={`taggo-alert ${alertTones[type]}`}>
       {children}
     </div>
   )
 }
+
