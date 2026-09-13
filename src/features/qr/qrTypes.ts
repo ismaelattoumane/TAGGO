@@ -1,5 +1,17 @@
 export type QrStatus = 'draft' | 'active' | 'inactive' | 'archived'
 
+export type TaggoLifecycleStatus =
+  | 'available'
+  | 'reserved'
+  | 'assigned'
+  | 'activated'
+  | 'active'
+  | 'inactive'
+  | 'replaced'
+  | 'cancelled'
+
+export type PublicTaggoState = 'not_found' | 'unactivated' | 'active' | 'unavailable'
+
 /**
  * Canonical TAGGO QR record.
  *
@@ -15,6 +27,7 @@ export type QrRecord = {
   status: QrStatus
   /** Future Supabase owner (`profiles.id`). Undefined in LocalStorage mode. */
   ownerId?: string
+  lifecycleStatus?: TaggoLifecycleStatus
   createdAt: string
   updatedAt?: string
 }

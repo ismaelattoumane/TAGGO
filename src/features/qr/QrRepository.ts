@@ -1,5 +1,5 @@
 import type { CreateQrInput, QrRecord, UpdateQrInput } from './qrTypes'
-import type { QrStatus } from './qrTypes'
+import type { PublicTaggoState, QrStatus } from './qrTypes'
 import type { PublicProfileInput, PublicProfileRecord, PublicTaggoProfile } from './publicProfile'
 
 /**
@@ -25,6 +25,8 @@ export interface QrRepository {
   remove(id: string, ownerId?: string): Promise<boolean> | boolean
   getPublicTaggoProfile(publicId: string): Promise<PublicTaggoProfile | null> | PublicTaggoProfile | null
   getPublicTaggoStatus(publicId: string): Promise<QrStatus | null> | QrStatus | null
+  getPublicTaggoState(publicId: string): Promise<PublicTaggoState> | PublicTaggoState
+  activate(publicId: string, ownerId: string): Promise<QrRecord | null> | QrRecord | null
   getPublicProfile(qrId: string, ownerId?: string): Promise<PublicProfileRecord | null> | PublicProfileRecord | null
   savePublicProfile(qrId: string, input: PublicProfileInput, ownerId?: string): Promise<PublicProfileRecord | null> | PublicProfileRecord | null
 }

@@ -1,4 +1,4 @@
-import type { QrRecord, QrStatus } from './qrTypes'
+import type { QrRecord, QrStatus, TaggoLifecycleStatus } from './qrTypes'
 
 /**
  * LocalStorage-backed QrRepository.
@@ -17,6 +17,7 @@ export type StoredQr = {
   destinationUrl: string
   status: QrStatus
   ownerId?: string
+  lifecycleStatus?: TaggoLifecycleStatus
   createdAt: string
   updatedAt?: string
 }
@@ -28,6 +29,7 @@ const seedQrs: StoredQr[] = [
     title: 'Collection Print',
     destinationUrl: 'https://taggo.example/shop/collection-print',
     status: 'active',
+    lifecycleStatus: 'active',
     ownerId: 'demo-user',
     createdAt: '2026-08-30T09:00:00.000Z',
   },
@@ -37,6 +39,7 @@ const seedQrs: StoredQr[] = [
     title: 'Limited Capsule',
     destinationUrl: 'https://taggo.example/capsule',
     status: 'draft',
+    lifecycleStatus: 'activated',
     ownerId: 'demo-user',
     createdAt: '2026-08-29T09:00:00.000Z',
   },
@@ -49,10 +52,12 @@ export const LEGACY_SEED_ALIASES: Record<string, string> = {
 
 export function normalizeSeed(record: StoredQr): StoredQr {
   const publicId = record.publicId.trim().toUpperCase()
-  if (/^TGG-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{7}$/.test(publicId)) return { ...record, publicId }
+  if (/^TGG-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{7}$/.test(publicId)) {
+    return { ...record, publicId, lifecycleStatus: record.lifecycleStatus ?? (record.status === 'active' ? 'active' : 'activated') }
+  }
   const aliased = LEGACY_SEED_ALIASES[publicId]
-  if (aliased) return { ...record, publicId: aliased }
-  return { ...record, publicId: `${publicId}X`.slice(0, 11) }
+  if (aliased) return { ...record, publicId: aliased, lifecycleStatus: record.lifecycleStatus ?? 'activated' }
+  return { ...record, publicId: `${publicId}X`.slice(0, 11), lifecycleStatus: record.lifecycleStatus ?? 'activated' }
 }
 
 export function readStore(): StoredQr[] {

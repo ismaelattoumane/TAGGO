@@ -8,6 +8,12 @@ describe('tagCode (canonical public TAG format)', () => {
     expect(isValidTagCode(code)).toBe(true)
   })
 
+  it('generates unique public codes for a stock batch', () => {
+    const codes = Array.from({ length: 100 }, () => buildTagCode())
+    expect(new Set(codes).size).toBe(codes.length)
+    expect(codes.every(isValidTagCode)).toBe(true)
+  })
+
   it('validates and normalizes codes case-insensitively', () => {
     expect(isValidTagCode('TGG-ABCOEFG')).toBe(false)
     expect(isValidTagCode('TGG-8K9L2R7')).toBe(true)
@@ -44,6 +50,16 @@ describe('LocalQrRepository', () => {
     })
     expect(repo.getById(created.id)?.publicId).toBe(created.publicId)
     expect(repo.getByPublicId(created.publicId.toLowerCase())?.id).toBe(created.id)
+  })
+
+  it('exposes only a coarse public lifecycle state', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Not activated',
+      destinationUrl: 'https://taggo.example/not-activated',
+    })
+    expect(repo.getPublicTaggoState(created.publicId)).toBe('unactivated')
+    expect(repo.getPublicTaggoState('TGG-AAAAAAA')).toBe('not_found')
   })
 
   it('keeps legacy 6-char seed URLs working via alias', () => {
@@ -88,6 +104,22 @@ describe('LocalQrRepository', () => {
     expect(repo.getById(created.id, 'user-1')?.id).toBe(created.id)
     expect(repo.remove(created.id, 'user-2')).toBe(false)
     expect(repo.remove(created.id, 'user-1')).toBe(true)
+  })
+
+  it('activates an assigned code once and preserves its owner', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Assigned',
+      destinationUrl: 'https://taggo.example/assigned',
+    })
+    const stored = JSON.parse(window.localStorage.getItem('taggo-demo-qrs') ?? '[]') as Array<Record<string, unknown>>
+    stored[stored.length - 1] = { ...stored[stored.length - 1], lifecycleStatus: 'assigned', ownerId: undefined }
+    window.localStorage.setItem('taggo-demo-qrs', JSON.stringify(stored))
+
+    const activated = repo.activate(created.publicId, 'customer-1')
+    expect(activated?.ownerId).toBe('customer-1')
+    expect(activated?.lifecycleStatus).toBe('active')
+    expect(repo.activate(created.publicId, 'customer-2')).toBeNull()
   })
 
   it('saves a public profile without exposing private QR fields', () => {

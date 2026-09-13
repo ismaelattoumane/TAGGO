@@ -3,7 +3,7 @@ import { buildTagCode } from './tagCode'
 import { LEGACY_SEED_ALIASES, newPrivateId, readStore, toRecord, writeStore } from './qrStore'
 import type { StoredQr } from './qrStore'
 import type { QrRepository } from './QrRepository'
-import type { CreateQrInput, QrRecord, UpdateQrInput } from './qrTypes'
+import type { CreateQrInput, PublicTaggoState, QrRecord, UpdateQrInput } from './qrTypes'
 import { toPublicTaggoProfile, type PublicProfileInput, type PublicProfileRecord, type PublicTaggoProfile } from './publicProfile'
 
 const PROFILE_STORAGE_KEY = 'taggo-demo-public-profiles'
@@ -70,6 +70,7 @@ export class LocalQrRepository implements QrRepository {
       title,
       destinationUrl,
       status: 'draft',
+      lifecycleStatus: 'activated',
       ownerId: input.ownerId,
       createdAt: now,
       updatedAt: now,
@@ -96,6 +97,11 @@ export class LocalQrRepository implements QrRepository {
       title,
       destinationUrl,
       status: updates.status ?? current.status,
+      lifecycleStatus: updates.status === 'active'
+        ? 'active'
+        : updates.status === 'inactive'
+          ? 'inactive'
+          : current.lifecycleStatus,
       ownerId: updates.ownerId ?? current.ownerId,
       updatedAt: new Date().toISOString(),
     }
@@ -122,6 +128,22 @@ export class LocalQrRepository implements QrRepository {
 
   getPublicTaggoStatus(publicId: string): QrRecord['status'] | null {
     return this.getByPublicId(publicId)?.status ?? null
+  }
+
+  getPublicTaggoState(publicId: string): PublicTaggoState {
+    const qr = this.getByPublicId(publicId)
+    if (!qr) return 'not_found'
+    if (qr.status === 'active' && qr.lifecycleStatus === 'active') return 'active'
+    if (qr.lifecycleStatus === 'available' || qr.lifecycleStatus === 'reserved' || qr.lifecycleStatus === 'assigned' || qr.lifecycleStatus === 'activated') {
+      return 'unactivated'
+    }
+    return 'unavailable'
+  }
+
+  activate(publicId: string, ownerId: string): QrRecord | null {
+    const qr = this.getByPublicId(publicId)
+    if (!qr || qr.lifecycleStatus !== 'assigned' || qr.ownerId) return null
+    return this.update(qr.id, { ownerId, status: 'active' }, undefined)
   }
 
   getPublicProfile(qrId: string, ownerId?: string): PublicProfileRecord | null {

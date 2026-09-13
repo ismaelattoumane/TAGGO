@@ -10,6 +10,7 @@ import { QrDetailPage } from '../pages/QrDetailPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { TagRedirectPage } from '../pages/TagRedirectPage'
+import { ActivateTaggoPage } from '../pages/ActivateTaggoPage'
 import { useAuth } from '../context/AuthContext'
 import { Navigate } from 'react-router-dom'
 
@@ -67,6 +68,14 @@ const router = createBrowserRouter([
       },
       // Canonical public TAG route.
       { path: 't/:tag', element: <PublicQrPage /> },
+      {
+        path: 'activate/:tag',
+        element: (
+          <ProtectedRoute>
+            <ActivateTaggoPage />
+          </ProtectedRoute>
+        ),
+      },
       // Legacy compatibility: /qr/:publicId -> /t/:tag redirect.
       { path: 'qr/:publicId', element: <TagRedirectPage /> },
       { path: '404', element: <NotFoundPage /> },

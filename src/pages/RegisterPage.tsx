@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { isValidEmail, isValidPassword, sanitizeText } from '../lib/validators'
 
@@ -12,6 +12,9 @@ export function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const { signUp } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const returnTo = new URLSearchParams(location.search).get('returnTo')
+  const destination = returnTo?.startsWith('/') ? returnTo : '/dashboard'
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -26,7 +29,7 @@ export function RegisterPage() {
       setLoading(true)
       setError('')
       await signUp(email, password, cleanedFullName)
-      navigate('/dashboard')
+      navigate(destination)
     } catch (authError) {
       setError(authError instanceof Error ? authError.message : 'Erreur d’inscription.')
     } finally {

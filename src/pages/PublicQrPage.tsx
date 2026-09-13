@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { qrRepository } from '../features/qr/repository'
 import type { PublicTaggoProfile } from '../features/qr/publicProfile'
 import type { QrStatus } from '../features/qr/qrTypes'
+import type { PublicTaggoState } from '../features/qr/qrTypes'
 import { Alert } from '../components/Alert'
 import { isValidDestinationUrl } from '../lib/validators'
 
@@ -11,6 +12,7 @@ export function PublicQrPage() {
   const code = tag ?? publicId
   const [profile, setProfile] = useState<PublicTaggoProfile | null>(null)
   const [publicStatus, setPublicStatus] = useState<QrStatus | null>(null)
+  const [publicState, setPublicState] = useState<PublicTaggoState>('not_found')
   const [loaded, setLoaded] = useState(false)
   const [loadError, setLoadError] = useState(false)
 
@@ -21,12 +23,14 @@ export function PublicQrPage() {
         return
       }
       try {
-        const [publicProfile, status] = await Promise.all([
+        const [publicProfile, status, state] = await Promise.all([
           qrRepository.getPublicTaggoProfile(code),
           qrRepository.getPublicTaggoStatus(code),
+          qrRepository.getPublicTaggoState(code),
         ])
         setProfile(publicProfile)
         setPublicStatus(status)
+        setPublicState(state)
       } catch {
         setLoadError(true)
       }
@@ -64,6 +68,22 @@ export function PublicQrPage() {
           <p className="public-kicker">TAGGO / PAGE PUBLIQUE</p>
           <h1>Service temporairement indisponible</h1>
           <Alert type="error">Impossible de charger ce TAGGO pour le moment. Réessayez plus tard.</Alert>
+        </section>
+      </main>
+    )
+  }
+
+  if (!profile && publicState === 'unactivated' && code) {
+    const returnTo = `/activate/${encodeURIComponent(code)}`
+    return (
+      <main className="public-page">
+        <section className="public-card public-state-card">
+          <p className="public-kicker">TAGGO / ACTIVATION</p>
+          <h1>TAGGO non activé</h1>
+          <Alert type="error">Ce TAGGO n'a pas encore été activé.</Alert>
+          <a href={`/login?returnTo=${encodeURIComponent(returnTo)}`} className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
+            Activer mon TAGGO
+          </a>
         </section>
       </main>
     )
