@@ -49,8 +49,8 @@ export function PublicQrPage() {
   if (!loaded) {
     return (
       <main className="public-page">
-        <section className="public-card">
-          <p className="eyebrow">QR public</p>
+        <section className="public-card public-state-card">
+          <p className="public-kicker">TAGGO / PAGE PUBLIQUE</p>
           <h1>Chargement…</h1>
         </section>
       </main>
@@ -60,8 +60,8 @@ export function PublicQrPage() {
   if (loadError) {
     return (
       <main className="public-page">
-        <section className="public-card">
-          <p className="eyebrow">QR public</p>
+        <section className="public-card public-state-card">
+          <p className="public-kicker">TAGGO / PAGE PUBLIQUE</p>
           <h1>Service temporairement indisponible</h1>
           <Alert type="error">Impossible de charger ce TAGGO pour le moment. Réessayez plus tard.</Alert>
         </section>
@@ -72,8 +72,8 @@ export function PublicQrPage() {
   if (!profile && publicStatus && publicStatus !== 'active') {
     return (
       <main className="public-page">
-        <section className="public-card">
-          <p className="eyebrow">QR public</p>
+        <section className="public-card public-state-card">
+          <p className="public-kicker">TAGGO / PAGE PUBLIQUE</p>
           <h1>QR temporairement indisponible</h1>
           <Alert type="error">Ce TAGGO n'est pas actif pour le moment.</Alert>
         </section>
@@ -84,8 +84,8 @@ export function PublicQrPage() {
   if (!profile) {
     return (
       <main className="public-page">
-        <section className="public-card">
-          <p className="eyebrow">QR public</p>
+        <section className="public-card public-state-card">
+          <p className="public-kicker">TAGGO / PAGE PUBLIQUE</p>
           <h1>QR introuvable</h1>
           <Alert type="error">
             Ce code n'existe pas ou n'est plus actif. Vérifiez que l'identifiant public est correct.
@@ -116,13 +116,14 @@ export function PublicQrPage() {
 
   return (
     <main className="public-page">
-      <section className="public-card">
-        <p className="eyebrow">QR public</p>
+      <section className="public-card public-profile-card">
+        <div className="public-brand">TAGGO</div>
+        <p className="public-kicker">PAGE PUBLIQUE</p>
         <h1>{profile.displayName ?? 'TAGGO'}</h1>
         {profile.headline ? <p className="headline">{profile.headline}</p> : null}
         {profile.bio ? <p className="bio">{profile.bio}</p> : null}
 
-        <a className="primary-button" href={profile.destinationUrl} target="_blank" rel="noreferrer">
+        <a className="primary-button public-cta" href={profile.destinationUrl} target="_blank" rel="noreferrer">
           Accéder
         </a>
         {safeProfileUrl ? (
