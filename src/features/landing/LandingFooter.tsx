@@ -29,13 +29,11 @@ export function LandingFooter() {
       <div className="taggo-landing-footer__inner">
         <div className="taggo-landing-footer__brand">
           <img
-            src={`${import.meta.env.BASE_URL}favicon.svg`}
-            alt=""
+            src={`${import.meta.env.BASE_URL}logo/logo.svg`}
+            alt="TAGGO"
             className="taggo-landing-footer__logo-img"
-            width="34"
-            height="33"
+            height="32"
           />
-          <span className="taggo-landing-footer__logo-name">TAGGO</span>
           <p className="taggo-landing-footer__tagline">
             Le T-shirt connecté. Ton identité. Ton monde.
           </p>
