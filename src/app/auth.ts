@@ -1,3 +1,4 @@
+import { buildAuthRedirectUrl } from '../lib/runtime'
 import { supabase } from '../lib/supabase'
 
 function requireClient(): NonNullable<typeof supabase> {
@@ -15,7 +16,10 @@ export async function signUp(email: string, password: string, fullName: string) 
   const { data, error } = await requireClient().auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName } },
+    options: {
+      data: { full_name: fullName },
+      emailRedirectTo: buildAuthRedirectUrl('/login'),
+    },
   })
   if (error) throw error
   return data

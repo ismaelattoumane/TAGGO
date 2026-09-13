@@ -1,85 +1,96 @@
-# TAGGO MVP
+# TAGGO
 
 ## Description
 
-TAGGO permet à un propriétaire de gérer ses QR codes de vêtements connectés et la destination publique associée à chaque code.
+TAGGO est une application de gestion de QR codes publics pour marques et collections. Le MVP permet de créer, éditer et suivre des codes TAGGO, de sécuriser l’accès côté dashboard, et d’afficher une page publique filtrée selon le statut du QR.
 
 ## Stack
 
-- React 19, TypeScript, Vite et React Router
-- Supabase Auth et PostgreSQL avec RLS en production
-- Vitest et Testing Library
-- Mode local de démonstration sans backend configuré
+- React 19 + TypeScript + Vite
+- React Router 7 pour la navigation SPA
+- Supabase Auth + PostgreSQL avec RLS
+- Vitest + Testing Library pour les tests automatisés
+- localStorage uniquement en mode démo hors production
 
-## Installation
+## Installation locale
 
 ```bash
 npm install
 cp .env.example .env.local
+npm run dev
 ```
 
-## Variables d'environnement
+## Variables d’environnement
 
-Le mode production nécessite :
+Le frontend attend au minimum :
 
 ```env
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-La clé utilisée est exclusivement la clé publique anon Supabase. Ne jamais exposer une clé service role.
+Aucune clé service role, secret, ou token privé ne doit être exposée dans le frontend. Seule la clé publique anon de Supabase est utilisée côté client.
 
 ## Développement
 
 ```bash
 npm run dev
-```
-
-Sans variables Supabase, l'application démarre en mode démo local. Ce mode ne doit pas être utilisé pour de vrais comptes : les données sont stockées dans `localStorage`.
-
-## Production
-
-```bash
 npm run typecheck
-npm test
+npm run test
+npm run lint
 npm run build
-npm run preview
 ```
 
-Avant le déploiement, exécuter [supabase/schema.sql](supabase/schema.sql) dans le projet Supabase et configurer les deux variables d'environnement.
+## Mode local démo
 
-## Architecture
+Sans variables Supabase configurées, l’application fonctionne en mode local demo. Ce mode ne doit pas être utilisé pour des comptes réels ni pour la production. Les données de test sont stockées dans localStorage et ne remplacent pas l’authentification Supabase.
 
-`src/app` contient le routage, `src/context` la session, `src/features/auth` et `src/features/qr` les repositories, et `src/pages` les écrans MVP. Le repository choisi dépend de la configuration : Supabase en environnement configuré, local uniquement en démo.
+## Base de données Supabase
+
+Le schéma attendu est décrit dans [supabase/schema.sql](supabase/schema.sql). Il définit :
+
+- les profils
+- les QR codes publics
+- les profils publics associés
+- les abonnements
+- les politiques RLS
 
 ## Routes principales
 
-- `/` : redirection vers `/login` ou `/dashboard`
-- `/login`, `/register` : authentification
-- `/dashboard`, `/dashboard/settings`, `/dashboard/qr/new`, `/dashboard/qr/:qrId` : espace privé
-- `/t/:tag` : page QR publique
-- `/qr/:publicId` : compatibilité avec les anciens QR
-- `*` : page 404
+- / : redirection vers /login ou /dashboard
+- /login et /register : accès public non authentifié
+- /dashboard : espace privé
+- /dashboard/settings : paramètres
+- /dashboard/qr/new : création d’un QR
+- /dashboard/qr/:qrId : édition d’un QR
+- /t/:tag : page publique d’un QR actif
+- /qr/:publicId : redirection de compatibilité vers la route canonique
+- /404 : page non trouvée
 
 ## Fonctionnement QR
 
-Un QR public utilise un identifiant `TGG-XXXXXXX`. Seuls les QR `active`, avec destination HTTPS/HTTP valide et publication activée, sont résolus publiquement. La destination est ouverte dans un nouvel onglet ; les codes inexistants, inactifs ou mal configurés affichent un état propre.
+Un QR public utilise le format TGG-XXXXXXX. La route publique n’expose que les enregistrements actifs, publics, avec une destination HTTP ou HTTPS valide. Les QR inactifs, non publiés, ou sans destination valide affichent un état explicite au lieu de rediriger.
+
+## Déploiement Vercel
+
+Le projet est prêt pour un déploiement Vercel en SPA. Une configuration fallback est fournie dans [vercel.json](vercel.json) pour garantir que les routes React Router restent accessibles après rechargement direct.
+
+Variables à définir dans Vercel :
+
+- VITE_SUPABASE_URL
+- VITE_SUPABASE_ANON_KEY
 
 ## Sécurité
 
-- Authentification Supabase et sessions persistantes en production
-- RLS sur les profils, QR codes et abonnements
-- Contrôle propriétaire sur chaque lecture, modification et suppression
-- Validation URL limitée aux schémas `http:` et `https:`
-- Aucune valeur secrète dans le frontend ou le repository
-- Pages privées marquées `noindex`
+- Authentification gérée par Supabase
+- Sessions persistées automatiquement
+- validation des destinations limitées à http et https
+- accès propriétaire vérifié côté frontend et côté base
+- aucune donnée sensible exposée dans le bundle
+- RLS conservé et non désactivé
 
-## Déploiement
+## Limitations du MVP
 
-Déployer le contenu de `dist` sur un hébergeur statique configuré pour servir `index.html` comme fallback SPA. Les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` doivent être définies au moment du build. Activer HTTPS et les headers de sécurité chez l'hébergeur.
-
-## Limitations connues
-
-- Le mode local est une démonstration uniquement et ne fournit pas une sécurité serveur.
-- La génération d'image QR imprimable et la réinitialisation de mot de passe ne font pas partie de ce MVP.
-- Le bundle inclut encore Three.js et dépasse le seuil de warning Vite ; cela n'empêche pas le fonctionnement du MVP.
+- le paiement Stripe n’est pas encore implémenté
+- la gestion avancée de profil n’est pas encore connectée à Supabase
+- l’authentification de changement de mot de passe et la suppression de compte restent à brancher selon le workflow Supabase final

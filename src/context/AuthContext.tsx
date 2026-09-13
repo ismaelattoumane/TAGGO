@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -11,17 +10,8 @@ import { LocalAuthRepository } from '../features/auth/LocalAuthRepository'
 import { SupabaseAuthRepository } from '../features/auth/SupabaseAuthRepository'
 import type { AuthRepository } from '../features/auth/AuthRepository'
 import type { AuthUser } from '../features/auth/authTypes'
+import { AuthContext, type AuthContextValue } from './authContextValue'
 import { isSupabaseConfigured } from '../lib/supabase'
-
-type AuthContextValue = {
-  user: AuthUser | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, fullName: string) => Promise<void>
-  signOut: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 const unavailableAuthRepository: AuthRepository = {
   getSession: () => ({ user: null }),
   getCurrentUser: () => null,
