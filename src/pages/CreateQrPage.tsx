@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { goBackSafely } from '../lib/navigation'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
 import { qrRepository } from '../features/qr/repository'
 
@@ -42,8 +43,13 @@ export function CreateQrPage() {
   return (
     <main className="settings-shell">
       <section className="settings-card" style={{ maxWidth: 700 }}>
-        <p className="eyebrow">Créer un QR</p>
-        <h1>Nouveau QR</h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+          <div>
+            <p className="eyebrow">Créer un QR</p>
+            <h1>Nouveau QR</h1>
+          </div>
+          <button type="button" className="ghost-button" onClick={() => goBackSafely(navigate, '/dashboard')}>Retour</button>
+        </div>
 
         <div className="auth-form" style={{ marginTop: '1.5rem' }}>
           <label htmlFor="qr-create-title">

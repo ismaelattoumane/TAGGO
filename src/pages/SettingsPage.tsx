@@ -1,16 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { goBackSafely } from '../lib/navigation'
 
 export function SettingsPage() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1)
-      return
-    }
-    navigate('/dashboard')
+    goBackSafely(navigate, '/dashboard')
   }
 
   const handleSignOut = async () => {

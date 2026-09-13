@@ -1,5 +1,7 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
+import { recordCurrentAppPath } from './lib/navigation'
 import './styles/tokens.css'
 import './components/Alert.css'
 import './components/ui/Button/Button.css'
@@ -12,6 +14,12 @@ import './components/ui/Typography/Typography.css'
 import './App.css'
 
 function App() {
+  const location = useLocation()
+
+  useEffect(() => {
+    recordCurrentAppPath(location.pathname)
+  }, [location.pathname])
+
   return (
     <AuthProvider>
       <>
