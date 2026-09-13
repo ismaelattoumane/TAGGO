@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
-import { qrRepository } from '../features/qr/LocalQrRepository'
+import { qrRepository } from '../features/qr/repository'
 
 export function QrDetailPage() {
   const { qrId } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [title, setTitle] = useState('')
   const [destinationUrl, setDestinationUrl] = useState('')
   const [status, setStatus] = useState<'draft' | 'active' | 'inactive' | 'archived'>('draft')
@@ -22,7 +24,7 @@ export function QrDetailPage() {
         return
       }
 
-      const qr = await qrRepository.getById(qrId)
+      const qr = await qrRepository.getById(qrId, user?.id)
       if (!qr) {
         setMessage('QR non trouvé.')
         setLoading(false)
@@ -35,8 +37,8 @@ export function QrDetailPage() {
       setPublicId(qr.publicId)
       setLoading(false)
     }
-    void load()
-  }, [qrId])
+    if (user) void load()
+  }, [qrId, user])
 
   const handleSave = async () => {
     if (!qrId) return
@@ -53,7 +55,7 @@ export function QrDetailPage() {
       title: cleanedTitle,
       destinationUrl,
       status,
-    })
+    }, user?.id)
 
     if (updated) {
       setMessage('QR mis à jour avec succès.')
@@ -68,7 +70,7 @@ export function QrDetailPage() {
   const handleDelete = async () => {
     if (!qrId) return
 
-    if (await qrRepository.remove(qrId)) {
+    if (await qrRepository.remove(qrId, user?.id)) {
       setMessage('QR supprimé avec succès.')
       setTimeout(() => {
         navigate('/dashboard')

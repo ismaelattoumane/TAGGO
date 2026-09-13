@@ -1,5 +1,18 @@
 create extension if not exists pgcrypto;
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (new.id, new.email, new.raw_user_meta_data ->> 'full_name')
+  on conflict (id) do update set email = excluded.email, full_name = excluded.full_name;
+  return new;
+end;
+$$;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text unique not null,
@@ -12,10 +25,10 @@ create table if not exists public.profiles (
 create table if not exists public.qr_codes (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.profiles(id) on delete cascade,
-  public_id text not null unique,
+  public_id text not null unique check (public_id ~ '^TGG-[A-Z0-9]{7}$'),
   status text not null default 'draft' check (status in ('draft', 'active', 'inactive', 'archived')),
-  destination_url text,
-  title text,
+  destination_url text check (destination_url is null or destination_url ~* '^https?://'),
+  title text check (title is null or length(trim(title)) between 1 and 80),
   description text,
   is_public boolean not null default false,
   created_at timestamptz default now(),
@@ -48,6 +61,11 @@ create index if not exists idx_qr_codes_public_id on public.qr_codes(public_id);
 create index if not exists idx_public_profiles_qr_code_id on public.public_profiles(qr_code_id);
 create index if not exists idx_subscriptions_user_id on public.subscriptions(user_id);
 
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
 alter table public.profiles enable row level security;
 alter table public.qr_codes enable row level security;
 alter table public.public_profiles enable row level security;
@@ -64,6 +82,9 @@ for insert with check (auth.uid() = id);
 
 create policy "Owners can view their QR codes" on public.qr_codes
 for select using (auth.uid() = owner_id);
+
+create policy "Public can view active QR codes" on public.qr_codes
+for select using (is_public = true and status = 'active' and destination_url is not null);
 
 create policy "Owners can insert their QR codes" on public.qr_codes
 for insert with check (auth.uid() = owner_id);

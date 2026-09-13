@@ -7,8 +7,11 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { authRepository } from '../features/auth/LocalAuthRepository'
+import { LocalAuthRepository } from '../features/auth/LocalAuthRepository'
+import { SupabaseAuthRepository } from '../features/auth/SupabaseAuthRepository'
+import type { AuthRepository } from '../features/auth/AuthRepository'
 import type { AuthUser } from '../features/auth/authTypes'
+import { isSupabaseConfigured } from '../lib/supabase'
 
 type AuthContextValue = {
   user: AuthUser | null
@@ -19,6 +22,19 @@ type AuthContextValue = {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+const unavailableAuthRepository: AuthRepository = {
+  getSession: () => ({ user: null }),
+  getCurrentUser: () => null,
+  signIn: async () => { throw new Error('Supabase doit être configuré pour la production.') },
+  signUp: async () => { throw new Error('Supabase doit être configuré pour la production.') },
+  signOut: async () => undefined,
+  onAuthStateChange: () => () => undefined,
+}
+const authRepository = isSupabaseConfigured
+  ? new SupabaseAuthRepository()
+  : import.meta.env.PROD
+    ? unavailableAuthRepository
+    : new LocalAuthRepository()
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)

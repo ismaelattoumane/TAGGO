@@ -13,8 +13,8 @@ export function NotFoundPage() {
           La page que vous cherchez n'existe pas ou a été supprimée.
         </p>
 
-        <Link to="/dashboard" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
-          Retourner au dashboard
+        <Link to="/login" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>
+          Retourner à la connexion
         </Link>
       </section>
     </main>

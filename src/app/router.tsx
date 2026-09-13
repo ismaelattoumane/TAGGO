@@ -9,15 +9,22 @@ import { PublicQrPage } from '../pages/PublicQrPage'
 import { QrDetailPage } from '../pages/QrDetailPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { SettingsPage } from '../pages/SettingsPage'
-import { LandingPage } from '../features/landing/LandingPage'
 import { TagRedirectPage } from '../pages/TagRedirectPage'
+import { useAuth } from '../context/AuthContext'
+import { Navigate } from 'react-router-dom'
+
+function AppEntry() {
+  const { user, loading } = useAuth()
+  if (loading) return null
+  return <Navigate to={user ? '/dashboard' : '/login'} replace />
+}
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <LandingPage /> },
+      { index: true, element: <AppEntry /> },
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
       {

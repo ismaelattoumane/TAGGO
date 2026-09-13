@@ -28,6 +28,7 @@ const seedQrs: StoredQr[] = [
     title: 'Collection Print',
     destinationUrl: 'https://taggo.example/shop/collection-print',
     status: 'active',
+    ownerId: 'demo-user',
     createdAt: '2026-08-30T09:00:00.000Z',
   },
   {
@@ -36,6 +37,7 @@ const seedQrs: StoredQr[] = [
     title: 'Limited Capsule',
     destinationUrl: 'https://taggo.example/capsule',
     status: 'draft',
+    ownerId: 'demo-user',
     createdAt: '2026-08-29T09:00:00.000Z',
   },
 ]
