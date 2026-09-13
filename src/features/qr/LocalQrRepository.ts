@@ -4,6 +4,23 @@ import { LEGACY_SEED_ALIASES, newPrivateId, readStore, toRecord, writeStore } fr
 import type { StoredQr } from './qrStore'
 import type { QrRepository } from './QrRepository'
 import type { CreateQrInput, QrRecord, UpdateQrInput } from './qrTypes'
+import { toPublicTaggoProfile, type PublicProfileInput, type PublicProfileRecord, type PublicTaggoProfile } from './publicProfile'
+
+const PROFILE_STORAGE_KEY = 'taggo-demo-public-profiles'
+
+function readProfiles(): Record<string, PublicProfileRecord> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(PROFILE_STORAGE_KEY)
+    return raw ? JSON.parse(raw) as Record<string, PublicProfileRecord> : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeProfiles(profiles: Record<string, PublicProfileRecord>): void {
+  if (typeof window !== 'undefined') window.localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profiles))
+}
 
 /**
  * LocalStorage-backed QrRepository.
@@ -95,6 +112,29 @@ export class LocalQrRepository implements QrRepository {
     qrs.splice(index, 1)
     writeStore(qrs)
     return true
+  }
+
+  getPublicTaggoProfile(publicId: string): PublicTaggoProfile | null {
+    const qr = this.getByPublicId(publicId)
+    if (!qr || qr.status !== 'active' || !qr.destinationUrl) return null
+    return toPublicTaggoProfile(qr, readProfiles()[qr.id])
+  }
+
+  getPublicTaggoStatus(publicId: string): QrRecord['status'] | null {
+    return this.getByPublicId(publicId)?.status ?? null
+  }
+
+  getPublicProfile(qrId: string, ownerId?: string): PublicProfileRecord | null {
+    if (!this.getById(qrId, ownerId)) return null
+    return readProfiles()[qrId] ?? null
+  }
+
+  savePublicProfile(qrId: string, input: PublicProfileInput, ownerId?: string): PublicProfileRecord | null {
+    if (!this.getById(qrId, ownerId)) return null
+    const profiles = readProfiles()
+    profiles[qrId] = input
+    writeProfiles(profiles)
+    return input
   }
 }
 

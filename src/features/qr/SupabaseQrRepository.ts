@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { buildTagCode } from './tagCode'
 import type { QrRepository } from './QrRepository'
 import type { CreateQrInput, QrRecord, UpdateQrInput } from './qrTypes'
+import { toPublicTaggoProfile, type PublicProfileInput, type PublicProfileRecord, type PublicTaggoProfile } from './publicProfile'
 
 type SupabaseQr = {
   id: string
@@ -13,6 +14,13 @@ type SupabaseQr = {
   status: QrRecord['status']
   created_at: string
   updated_at: string | null
+}
+
+type SupabasePublicProfile = {
+  display_name: string
+  headline: string | null
+  bio: string | null
+  profile_url: string | null
 }
 
 function requireClient() {
@@ -61,6 +69,60 @@ export class SupabaseQrRepository implements QrRepository {
     const { data, error } = await requireClient().from('qr_codes').select('*').eq('public_id', publicId.trim().toUpperCase()).eq('status', 'active').eq('is_public', true).not('destination_url', 'is', null).maybeSingle()
     if (error) throw error
     return data ? toRecord(data as SupabaseQr) : null
+  }
+
+  async getPublicTaggoProfile(publicId: string): Promise<PublicTaggoProfile | null> {
+    const qr = await this.getByPublicId(publicId)
+    if (!qr) return null
+    const { data, error } = await requireClient()
+      .from('public_profiles')
+      .select('display_name, headline, bio, profile_url')
+      .eq('qr_code_id', qr.id)
+      .maybeSingle()
+    if (error) throw error
+    return toPublicTaggoProfile(qr, data as SupabasePublicProfile | null)
+  }
+
+  async getPublicTaggoStatus(publicId: string): Promise<QrRecord['status'] | null> {
+    return (await this.getByPublicId(publicId))?.status ?? null
+  }
+
+  async getPublicProfile(qrId: string, ownerId?: string): Promise<PublicProfileRecord | null> {
+    if (!ownerId || !(await this.getById(qrId, ownerId))) return null
+    const { data, error } = await requireClient()
+      .from('public_profiles')
+      .select('display_name, headline, bio, profile_url')
+      .eq('qr_code_id', qrId)
+      .maybeSingle()
+    if (error) throw error
+    return data ? {
+      displayName: data.display_name,
+      headline: data.headline ?? '',
+      bio: data.bio ?? '',
+      profileUrl: data.profile_url ?? '',
+    } : null
+  }
+
+  async savePublicProfile(qrId: string, input: PublicProfileInput, ownerId?: string): Promise<PublicProfileRecord | null> {
+    if (!ownerId || !(await this.getById(qrId, ownerId))) return null
+    const { data, error } = await requireClient()
+      .from('public_profiles')
+      .upsert({
+        qr_code_id: qrId,
+        display_name: input.displayName,
+        headline: input.headline || null,
+        bio: input.bio || null,
+        profile_url: input.profileUrl || null,
+      }, { onConflict: 'qr_code_id' })
+      .select('display_name, headline, bio, profile_url')
+      .single()
+    if (error) throw error
+    return {
+      displayName: data.display_name,
+      headline: data.headline ?? '',
+      bio: data.bio ?? '',
+      profileUrl: data.profile_url ?? '',
+    }
   }
 
   async create(input: CreateQrInput): Promise<QrRecord> {

@@ -89,4 +89,27 @@ describe('LocalQrRepository', () => {
     expect(repo.remove(created.id, 'user-2')).toBe(false)
     expect(repo.remove(created.id, 'user-1')).toBe(true)
   })
+
+  it('saves a public profile without exposing private QR fields', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Profiled',
+      destinationUrl: 'https://taggo.example/profiled',
+      ownerId: 'user-1',
+    })
+    repo.savePublicProfile(created.id, {
+      displayName: 'TAGGO Profile',
+      headline: 'Une accroche',
+      bio: 'Une bio',
+      profileUrl: 'https://taggo.example/about',
+    }, 'user-1')
+
+    expect(repo.getPublicProfile(created.id, 'user-1')).toEqual({
+      displayName: 'TAGGO Profile',
+      headline: 'Une accroche',
+      bio: 'Une bio',
+      profileUrl: 'https://taggo.example/about',
+    })
+    expect(repo.getPublicProfile(created.id, 'user-2')).toBeNull()
+  })
 })
