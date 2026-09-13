@@ -10,6 +10,10 @@ const unavailableQrRepository: QrRepository = {
   create: async () => { throw new Error('Supabase doit être configuré pour la production.') },
   update: () => null,
   remove: () => false,
+  getPublicTaggoProfile: () => null,
+  getPublicTaggoStatus: () => null,
+  getPublicProfile: () => null,
+  savePublicProfile: async () => { throw new Error('Supabase doit être configuré pour la production.') },
 }
 
 export const qrRepository: QrRepository = isSupabaseConfigured

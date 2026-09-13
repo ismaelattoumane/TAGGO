@@ -1,4 +1,6 @@
 import type { CreateQrInput, QrRecord, UpdateQrInput } from './qrTypes'
+import type { QrStatus } from './qrTypes'
+import type { PublicProfileInput, PublicProfileRecord, PublicTaggoProfile } from './publicProfile'
 
 /**
  * Storage abstraction for TAGGO QR codes.
@@ -21,4 +23,8 @@ export interface QrRepository {
     ownerId?: string,
   ): Promise<QrRecord | null> | QrRecord | null
   remove(id: string, ownerId?: string): Promise<boolean> | boolean
+  getPublicTaggoProfile(publicId: string): Promise<PublicTaggoProfile | null> | PublicTaggoProfile | null
+  getPublicTaggoStatus(publicId: string): Promise<QrStatus | null> | QrStatus | null
+  getPublicProfile(qrId: string, ownerId?: string): Promise<PublicProfileRecord | null> | PublicProfileRecord | null
+  savePublicProfile(qrId: string, input: PublicProfileInput, ownerId?: string): Promise<PublicProfileRecord | null> | PublicProfileRecord | null
 }

@@ -127,7 +127,8 @@ svg {
 }
 
 .auth-form input,
-.auth-form select {
+.auth-form select,
+.auth-form textarea {
   width: 100%;
   padding: 0.9rem 1rem;
   border: 1px solid var(--border);
@@ -137,7 +138,8 @@ svg {
 }
 
 .auth-form input:focus,
-.auth-form select:focus {
+.auth-form select:focus,
+.auth-form textarea:focus {
   outline: 2px solid rgba(76, 201, 240, 0.4);
   border-color: var(--blue);
 }
@@ -178,7 +180,8 @@ svg {
 .link-button:focus-visible,
 .nav-item:focus-visible,
 .auth-form input:focus-visible,
-.auth-form select:focus-visible {
+.auth-form select:focus-visible,
+.auth-form textarea:focus-visible {
   outline: 3px solid var(--blue);
   outline-offset: 2px;
 }
@@ -393,6 +396,89 @@ svg {
   padding: 0.9rem 1rem;
   background: rgba(111, 45, 168, 0.04);
   border-radius: 14px;
+}
+
+.public-profile-link,
+.public-footer {
+  display: block;
+  text-align: center;
+}
+
+.public-profile-link {
+  margin-top: 1rem;
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.public-footer {
+  margin-top: 2rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.qr-code-panel {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(245, 225, 218, 0.36);
+  text-align: center;
+}
+
+.qr-code-panel h2 {
+  font-size: 1.2rem;
+}
+
+.qr-code-image {
+  width: min(100%, 320px);
+  aspect-ratio: 1;
+  padding: 0.75rem;
+  background: #fff;
+  border-radius: 8px;
+}
+
+.qr-code-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.profile-fields {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.profile-fields legend {
+  padding: 0 0.4rem;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.profile-fields label {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.profile-fields input,
+.profile-fields textarea {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  resize: vertical;
 }
 
 .settings-list {

@@ -4,6 +4,27 @@ import { useAuth } from '../context/AuthContext'
 import { goBackSafely } from '../lib/navigation'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
 import { qrRepository } from '../features/qr/repository'
+import { CopyButton } from '../components/CopyButton'
+import { buildPublicTaggoUrl } from '../lib/publicUrl'
+import { generateQrPng, generateQrSvg } from '../features/qr/qrCode'
+import type { PublicProfileInput } from '../features/qr/publicProfile'
+
+function downloadFile(content: string, fileName: string, type: string) {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+function downloadPng(dataUrl: string, fileName: string) {
+  const link = document.createElement('a')
+  link.href = dataUrl
+  link.download = fileName
+  link.click()
+}
 
 export function QrDetailPage() {
   const { qrId } = useParams()
@@ -13,6 +34,12 @@ export function QrDetailPage() {
   const [destinationUrl, setDestinationUrl] = useState('')
   const [status, setStatus] = useState<'draft' | 'active' | 'inactive' | 'archived'>('draft')
   const [publicId, setPublicId] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [headline, setHeadline] = useState('')
+  const [bio, setBio] = useState('')
+  const [profileUrl, setProfileUrl] = useState('')
+  const [qrPng, setQrPng] = useState('')
+  const [qrSvg, setQrSvg] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -38,6 +65,11 @@ export function QrDetailPage() {
         setDestinationUrl(qr.destinationUrl)
         setStatus(qr.status)
         setPublicId(qr.publicId)
+        const publicProfile = await qrRepository.getPublicProfile(qr.id, user?.id)
+        setDisplayName(publicProfile?.displayName ?? qr.title)
+        setHeadline(publicProfile?.headline ?? '')
+        setBio(publicProfile?.bio ?? '')
+        setProfileUrl(publicProfile?.profileUrl ?? '')
       } catch {
         setMessage('Impossible de charger ce QR pour le moment.')
       }
@@ -46,14 +78,30 @@ export function QrDetailPage() {
     if (user) void load()
   }, [qrId, user])
 
+  useEffect(() => {
+    if (!publicId) return
+    void Promise.all([generateQrPng(publicId), generateQrSvg(publicId)]).then(([png, svg]) => {
+      setQrPng(png)
+      setQrSvg(svg)
+    }).catch(() => {
+      setMessage('Impossible de générer le QR code pour le moment.')
+    })
+  }, [publicId])
+
   const handleSave = async () => {
     if (!qrId) return
 
     const cleanedTitle = sanitizeText(title)
+    const cleanedDisplayName = sanitizeText(displayName).slice(0, 80)
+    const cleanedHeadline = sanitizeText(headline).slice(0, 120)
+    const cleanedBio = sanitizeText(bio).slice(0, 500)
+    const cleanedProfileUrl = profileUrl.trim()
     const valid = cleanedTitle && isValidDestinationUrl(destinationUrl)
+      && cleanedDisplayName
+      && (!cleanedProfileUrl || isValidDestinationUrl(cleanedProfileUrl))
 
     if (!valid) {
-      setMessage('Titre ou destination invalide.')
+      setMessage('Vérifiez le titre, la destination et le lien du profil.')
       return
     }
 
@@ -66,6 +114,17 @@ export function QrDetailPage() {
       }, user?.id)
 
       if (updated) {
+        const publicProfile: PublicProfileInput = {
+          displayName: cleanedDisplayName,
+          headline: cleanedHeadline,
+          bio: cleanedBio,
+          profileUrl: cleanedProfileUrl,
+        }
+        const savedProfile = await qrRepository.savePublicProfile(qrId, publicProfile, user?.id)
+        if (!savedProfile) {
+          setMessage('Le TAGGO a été enregistré, mais le profil public n’a pas pu être sauvegardé.')
+          return
+        }
         setMessage('QR mis à jour avec succès.')
         setTimeout(() => {
           navigate('/dashboard')
@@ -114,6 +173,28 @@ export function QrDetailPage() {
           <button type="button" className="ghost-button" onClick={() => goBackSafely(navigate, '/dashboard')}>Retour</button>
         </div>
 
+        <section className="qr-code-panel" aria-labelledby="qr-code-title">
+          <div>
+            <p className="eyebrow">Ton QR TAGGO</p>
+            <h2 id="qr-code-title">Scanne pour ouvrir ta page publique</h2>
+          </div>
+          {qrPng ? <img className="qr-code-image" src={qrPng} alt={`QR code de ${publicId}`} /> : <p role="status">Génération du QR code...</p>}
+          <strong>{publicId}</strong>
+          <p>Ce QR ouvre ta page TAGGO publique.</p>
+          <div className="qr-code-actions">
+            <button type="button" className="primary-button" onClick={() => downloadPng(qrPng, `TAGGO-${publicId}.png`)} disabled={!qrPng}>
+              Télécharger PNG
+            </button>
+            <button type="button" className="ghost-button" onClick={() => downloadFile(qrSvg, `TAGGO-${publicId}.svg`, 'image/svg+xml')} disabled={!qrSvg}>
+              Télécharger SVG
+            </button>
+            <CopyButton text={buildPublicTaggoUrl(publicId)} label="Copier le lien" />
+            <a className="link-button" href={buildPublicTaggoUrl(publicId)} target="_blank" rel="noreferrer">
+              Ouvrir la page
+            </a>
+          </div>
+        </section>
+
         <div className="auth-form" style={{ marginTop: '1.5rem' }}>
           <label htmlFor="qr-title">
             Nom du QR
@@ -150,6 +231,26 @@ export function QrDetailPage() {
               <option value="archived">archived</option>
             </select>
           </label>
+
+          <fieldset className="profile-fields">
+            <legend>Profil public</legend>
+            <label htmlFor="profile-display-name">
+              Nom affiché
+              <input id="profile-display-name" maxLength={80} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+            </label>
+            <label htmlFor="profile-headline">
+              Phrase d’accroche
+              <input id="profile-headline" maxLength={120} value={headline} onChange={(event) => setHeadline(event.target.value)} />
+            </label>
+            <label htmlFor="profile-bio">
+              Bio
+              <textarea id="profile-bio" maxLength={500} rows={4} value={bio} onChange={(event) => setBio(event.target.value)} />
+            </label>
+            <label htmlFor="profile-url">
+              Lien de profil
+              <input id="profile-url" type="url" inputMode="url" value={profileUrl} onChange={(event) => setProfileUrl(event.target.value)} />
+            </label>
+          </fieldset>
 
           {message ? (
             <p role="status" className="form-error">

@@ -10,6 +10,13 @@ import { EmptyState } from '../components/ui/State/State'
 import { Eyebrow } from '../components/ui/Typography/Typography'
 import { SelectField } from '../components/ui/Field/Field'
 
+const statusLabels: Record<QrRecord['status'], string> = {
+  active: 'Actif',
+  inactive: 'Inactif',
+  draft: 'Brouillon',
+  archived: 'Archivé',
+}
+
 export function DashboardPage() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
@@ -75,16 +82,16 @@ export function DashboardPage() {
 
         <div className="stats-grid">
           <article className="stat-card">
-            <span>QR actifs</span>
+            <span>TAGGO actifs</span>
             <strong>{qrList.filter((qr) => qr.status === 'active').length}</strong>
           </article>
           <article className="stat-card">
-            <span>QR total</span>
-            <strong>{qrList.length}</strong>
+            <span>TAGGO inactifs</span>
+            <strong>{qrList.filter((qr) => qr.status === 'inactive').length}</strong>
           </article>
           <article className="stat-card">
-            <span>Abonnement</span>
-            <strong>Bientôt disponible</strong>
+            <span>Total TAGGO</span>
+            <strong>{qrList.length}</strong>
           </article>
         </div>
 
@@ -135,22 +142,28 @@ export function DashboardPage() {
                       <h3>{qr.title}</h3>
                     </div>
                     <div className="pill-row">
-                      <Badge tone={qr.status}>{qr.status}</Badge>
+                      <Badge tone={qr.status}>{statusLabels[qr.status]}</Badge>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.875rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <span style={{ color: '#999', display: 'block', marginBottom: '0.25rem' }}>Lien public</span>
-                      <code style={{ color: '#333', backgroundColor: '#f5f5f5', padding: '0.25rem 0.5rem', borderRadius: '3px', display: 'block', wordBreak: 'break-all' }}>
-                        {getPublicQrUrl(qr.publicId)}
-                      </code>
-                    </div>
+                  <div style={{ fontSize: '0.875rem' }}>
+                    <span style={{ color: '#999', display: 'block', marginBottom: '0.25rem' }}>Destination</span>
+                    <code style={{ color: '#333', backgroundColor: '#f5f5f5', padding: '0.25rem 0.5rem', borderRadius: '3px', display: 'block', wordBreak: 'break-all' }}>
+                      {qr.destinationUrl || 'Destination non configurée'}
+                    </code>
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <a
+                      href={`/t/${qr.publicId}`}
+                      className="link-button"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Voir la page
+                    </a>
                     <Link to={`/dashboard/qr/${qr.id}`} className="link-button">
-                      Éditer
+                      Configurer
                     </Link>
                     <CopyButton text={getPublicQrUrl(qr.publicId)} label="Copier lien" />
                   </div>
