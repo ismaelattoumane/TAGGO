@@ -65,7 +65,7 @@ export function DashboardPage() {
           <Link to="/dashboard/settings" className="nav-item">Paramètres</Link>
         </nav>
 
-        <button type="button" className="ghost-button" onClick={handleSignOut} style={{ marginTop: '1.5rem' }}>
+        <button type="button" className="ghost-button sidebar-sign-out" onClick={handleSignOut}>
           Déconnexion
         </button>
       </aside>
@@ -75,9 +75,9 @@ export function DashboardPage() {
           <div>
             <Eyebrow>Tableau de bord</Eyebrow>
             <h1>Mes QR TAGGO</h1>
-            <p style={{ marginTop: '0.5rem', color: '#6d597a' }}>Connecté en tant que {user?.email ?? 'Utilisateur'}</p>
+            <p className="topbar-subtitle">Connecté en tant que {user?.email ?? 'Utilisateur'}</p>
           </div>
-          <Link to="/dashboard/qr/new" className="primary-button" style={{ textDecoration: 'none', display: 'inline-block' }}>Créer un QR</Link>
+          <Link to="/dashboard/qr/new" className="primary-button">Créer un TAGGO</Link>
         </header>
 
         <div className="stats-grid">
@@ -97,8 +97,11 @@ export function DashboardPage() {
 
         <section className="panel">
           <div className="panel-header">
-            <h2 id="qr-list-title">Liste des QR</h2>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div>
+              <p className="eyebrow">Votre collection</p>
+              <h2 id="qr-list-title">Mes TAGGO</h2>
+            </div>
+            <div className="filter-control">
               <SelectField
                 id="qr-status-filter"
                 label="Filtrer par statut"
@@ -135,8 +138,8 @@ export function DashboardPage() {
               />
             ) : (
               filteredQrList.map((qr) => (
-                <article key={qr.id} role="listitem" className="qr-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <article key={qr.id} role="listitem" className="qr-row">
+                  <div className="qr-row-header">
                     <div>
                       <p className="qr-id">{qr.publicId}</p>
                       <h3>{qr.title}</h3>
@@ -146,14 +149,14 @@ export function DashboardPage() {
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '0.875rem' }}>
-                    <span style={{ color: '#999', display: 'block', marginBottom: '0.25rem' }}>Destination</span>
-                    <code style={{ color: '#333', backgroundColor: '#f5f5f5', padding: '0.25rem 0.5rem', borderRadius: '3px', display: 'block', wordBreak: 'break-all' }}>
+                  <div className="qr-destination">
+                    <span>Destination</span>
+                    <code>
                       {qr.destinationUrl || 'Destination non configurée'}
                     </code>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div className="qr-row-actions">
                     <a
                       href={`/t/${qr.publicId}`}
                       className="link-button"

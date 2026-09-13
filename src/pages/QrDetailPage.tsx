@@ -155,7 +155,7 @@ export function QrDetailPage() {
   if (loading) {
     return (
       <main className="settings-shell">
-        <section className="settings-card" style={{ maxWidth: 700 }}>
+        <section className="settings-card detail-card">
           <p>Chargement...</p>
         </section>
       </main>
@@ -164,8 +164,8 @@ export function QrDetailPage() {
 
   return (
     <main className="settings-shell">
-      <section className="settings-card" style={{ maxWidth: 700 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+      <section className="settings-card detail-card">
+        <div className="detail-header">
           <div>
             <p className="eyebrow">QR detail</p>
             <h1>{publicId}</h1>
@@ -195,7 +195,7 @@ export function QrDetailPage() {
           </div>
         </section>
 
-        <div className="auth-form" style={{ marginTop: '1.5rem' }}>
+        <div className="auth-form detail-form">
           <label htmlFor="qr-title">
             Nom du QR
             <input
@@ -258,34 +258,32 @@ export function QrDetailPage() {
             </p>
           ) : null}
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="detail-actions">
             <button type="button" className="primary-button" onClick={() => void handleSave()} disabled={saving}>
               {saving ? 'Enregistrement...' : 'Enregistrer'}
             </button>
             <button
               type="button"
-              className="ghost-button"
+              className="ghost-button danger-button"
               onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
-              style={{ color: '#d32f2f' }}
             >
               Supprimer
             </button>
           </div>
 
           {showDeleteConfirm && (
-            <div style={{ padding: '1rem', backgroundColor: '#fff3e0', borderRadius: '4px', marginTop: '1rem' }}>
-              <p style={{ marginBottom: '0.75rem', fontWeight: 'bold', color: '#d32f2f' }}>
+            <div className="delete-confirmation">
+              <p className="delete-confirmation-title">
                 Confirmer la suppression?
               </p>
-              <p style={{ marginBottom: '1rem', fontSize: '0.875rem', color: '#666' }}>
+              <p className="delete-confirmation-copy">
                 Cette action est irréversible.
               </p>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div className="detail-actions">
                 <button
                   type="button"
-                  className="ghost-button"
+                  className="ghost-button danger-button"
                   onClick={() => void handleDelete()}
-                  style={{ color: '#d32f2f' }}
                 >
                   Supprimer définitivement
                 </button>
