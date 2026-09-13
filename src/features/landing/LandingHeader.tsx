@@ -41,20 +41,18 @@ export function LandingHeader() {
       <div className="taggo-landing-header__inner">
         <Link to="/" className="taggo-landing-header__logo" aria-label="TAGGO — Accueil">
           <img
-            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            src={`${import.meta.env.BASE_URL}logo/monogram.svg`}
             alt=""
             className="taggo-landing-header__logo-img taggo-landing-header__logo-img--mobile"
             width="40"
             height="40"
           />
           <img
-            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            src={`${import.meta.env.BASE_URL}logo/wordgram.svg`}
             alt=""
             className="taggo-landing-header__logo-img taggo-landing-header__logo-img--desktop"
-            width="32"
-            height="31"
+            height="36"
           />
-          <span className="taggo-landing-header__logo-name">TAGGO</span>
         </Link>
 
         <nav
