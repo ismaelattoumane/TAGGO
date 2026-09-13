@@ -33,9 +33,20 @@
 
 /* ---- Brand ---- */
 .taggo-landing-footer__logo-img {
-  display: block;
-  height: 2rem;
+  display: inline-block;
+  vertical-align: middle;
+  height: 2.1rem;
   width: auto;
+}
+
+.taggo-landing-footer__logo-name {
+  display: inline-block;
+  margin-left: 0.55rem;
+  vertical-align: middle;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 .taggo-landing-footer__tagline {

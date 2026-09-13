@@ -31,6 +31,7 @@
 .taggo-landing-header__logo {
   display: flex;
   align-items: center;
+  gap: 0.55rem;
   text-decoration: none;
   flex-shrink: 0;
 }
@@ -47,7 +48,15 @@
 
 .taggo-landing-header__logo-img--desktop {
   display: none;
-  height: 2.25rem;
+  height: 2rem;
+}
+
+.taggo-landing-header__logo-name {
+  display: none;
+  color: var(--color-text);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
 }
 
 @media (min-width: 768px) {
@@ -57,7 +66,10 @@
 
   .taggo-landing-header__logo-img--desktop {
     display: block;
-    height: 2.5rem;
+  }
+
+  .taggo-landing-header__logo-name {
+    display: inline;
   }
 }
 
