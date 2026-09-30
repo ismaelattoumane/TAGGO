@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LocalQrRepository } from './LocalQrRepository'
 import { buildTagCode, isValidTagCode, normalizeTagCode } from './tagCode'
+import { DEMO_USER_IDS } from '../../lib/demoAuth'
 
 describe('tagCode (canonical public TAG format)', () => {
   it('builds a canonical TGG-XXXXXXX code', () => {
@@ -40,6 +41,28 @@ describe('LocalQrRepository', () => {
     })
     expect(isValidTagCode(record.publicId)).toBe(true)
     expect(record.status).toBe('draft')
+  })
+
+  it('creates a TAGGO with a canonical id, no owner and activated lifecycle', () => {
+    const repo = new LocalQrRepository()
+    const record = repo.create({
+      title: 'Stock TAGGO',
+      destinationUrl: 'https://taggo.example/stock',
+    })
+    expect(isValidTagCode(record.publicId)).toBe(true)
+    expect(record.status).toBe('draft')
+    expect(record.lifecycleStatus).toBe('activated')
+    expect(record.ownerId).toBeUndefined()
+  })
+
+  it('scopes seeded demo QR codes to the canonical demo user', () => {
+    const repo = new LocalQrRepository()
+    const demoQrs = repo.list(DEMO_USER_IDS.demo)
+
+    expect(demoQrs.map((qr) => qr.publicId)).toEqual([
+      'TGG-8K9L2R7',
+      'TGG-NZ7Q4M2',
+    ])
   })
 
   it('resolves records by internal id and canonical public id', () => {
@@ -118,8 +141,113 @@ describe('LocalQrRepository', () => {
 
     const activated = repo.activate(created.publicId, 'customer-1')
     expect(activated?.ownerId).toBe('customer-1')
-    expect(activated?.lifecycleStatus).toBe('active')
+    expect(activated?.lifecycleStatus).toBe('activated')
+    expect(activated?.status).toBe('draft')
     expect(repo.activate(created.publicId, 'customer-2')).toBeNull()
+  })
+
+  it('assigns an available TAGGO to the current user', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'To Assign',
+      destinationUrl: 'https://taggo.example/assign',
+    })
+    const stored = JSON.parse(window.localStorage.getItem('taggo-demo-qrs') ?? '[]') as Array<Record<string, unknown>>
+    stored[stored.length - 1] = { ...stored[stored.length - 1], lifecycleStatus: 'available', ownerId: undefined }
+    window.localStorage.setItem('taggo-demo-qrs', JSON.stringify(stored))
+
+    const assigned = repo.assignTagToUser(created.id, 'user-a')
+    expect(assigned?.ownerId).toBe('user-a')
+    expect(assigned?.lifecycleStatus).toBe('assigned')
+    expect(assigned?.assignedAt).toBeDefined()
+  })
+
+  it('prevents a second user from taking an already-assigned TAGGO', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Taken',
+      destinationUrl: 'https://taggo.example/taken',
+    })
+    const stored = JSON.parse(window.localStorage.getItem('taggo-demo-qrs') ?? '[]') as Array<Record<string, unknown>>
+    stored[stored.length - 1] = { ...stored[stored.length - 1], lifecycleStatus: 'available', ownerId: undefined }
+    window.localStorage.setItem('taggo-demo-qrs', JSON.stringify(stored))
+
+    repo.assignTagToUser(created.id, 'user-a')
+    expect(repo.assignTagToUser(created.id, 'user-b')).toBeNull()
+  })
+
+  it('rejects activation of a non-existent TAGGO', () => {
+    const repo = new LocalQrRepository()
+    expect(repo.activate('TGG-AAAAAAA', 'customer-1')).toBeNull()
+  })
+
+  it('rejects activation of a TAGGO that is not assigned', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Available',
+      destinationUrl: 'https://taggo.example/unassigned',
+    })
+    const stored = JSON.parse(window.localStorage.getItem('taggo-demo-qrs') ?? '[]') as Array<Record<string, unknown>>
+    stored[stored.length - 1] = { ...stored[stored.length - 1], lifecycleStatus: 'available', ownerId: undefined }
+    window.localStorage.setItem('taggo-demo-qrs', JSON.stringify(stored))
+
+    expect(repo.activate(created.publicId, 'customer-1')).toBeNull()
+  })
+
+  it('rejects activation by a non-owner', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Assigned',
+      destinationUrl: 'https://taggo.example/mine',
+    })
+    const stored = JSON.parse(window.localStorage.getItem('taggo-demo-qrs') ?? '[]') as Array<Record<string, unknown>>
+    stored[stored.length - 1] = { ...stored[stored.length - 1], lifecycleStatus: 'available', ownerId: undefined }
+    window.localStorage.setItem('taggo-demo-qrs', JSON.stringify(stored))
+    repo.assignTagToUser(created.id, 'user-a')
+
+    expect(repo.activate(created.publicId, 'user-b')).toBeNull()
+  })
+
+  it('rejects re-activation of an already activated TAGGO', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Once Activated',
+      destinationUrl: 'https://taggo.example/once',
+    })
+    const stored = JSON.parse(window.localStorage.getItem('taggo-demo-qrs') ?? '[]') as Array<Record<string, unknown>>
+    stored[stored.length - 1] = { ...stored[stored.length - 1], lifecycleStatus: 'available', ownerId: undefined }
+    window.localStorage.setItem('taggo-demo-qrs', JSON.stringify(stored))
+    repo.assignTagToUser(created.id, 'user-a')
+
+    const first = repo.activate(created.publicId, 'user-a')
+    expect(first?.lifecycleStatus).toBe('activated')
+    expect(repo.activate(created.publicId, 'user-a')).toBeNull()
+  })
+
+  it('enforces the canonical lifecycle transitions and ownership', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({
+      title: 'Lifecycle',
+      destinationUrl: 'https://taggo.example/lifecycle',
+      ownerId: 'user-1',
+    })
+    const stored = JSON.parse(window.localStorage.getItem('taggo-demo-qrs') ?? '[]') as Array<Record<string, unknown>>
+    stored[stored.length - 1] = { ...stored[stored.length - 1], lifecycleStatus: 'available', ownerId: undefined }
+    window.localStorage.setItem('taggo-demo-qrs', JSON.stringify(stored))
+
+    expect(repo.transition(created.id, 'reserved', 'user-2')).toBeNull()
+    expect(repo.transition(created.id, 'reserved')).toMatchObject({ lifecycleStatus: 'reserved' })
+    expect(repo.transition(created.id, 'assigned')).toMatchObject({ lifecycleStatus: 'assigned' })
+    expect(repo.activate(created.publicId, 'user-1')).toMatchObject({ lifecycleStatus: 'activated', ownerId: 'user-1' })
+    expect(repo.transition(created.id, 'active', 'user-1')).toMatchObject({ lifecycleStatus: 'active', status: 'active' })
+    expect(() => repo.transition(created.id, 'available', 'user-1')).toThrow('Transition TAGGO interdite')
+  })
+
+  it('does not allow QR updates to change ownership', () => {
+    const repo = new LocalQrRepository()
+    const created = repo.create({ title: 'Owned', destinationUrl: 'https://taggo.example/owned', ownerId: 'user-1' })
+    const updated = repo.update(created.id, { title: 'Still owned' }, 'user-1')
+    expect(updated?.ownerId).toBe('user-1')
   })
 
   it('saves a public profile without exposing private QR fields', () => {

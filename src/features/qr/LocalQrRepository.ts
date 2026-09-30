@@ -5,6 +5,8 @@ import type { StoredQr } from './qrStore'
 import type { QrRepository } from './QrRepository'
 import type { CreateQrInput, PublicTaggoState, QrRecord, UpdateQrInput } from './qrTypes'
 import { toPublicTaggoProfile, type PublicProfileInput, type PublicProfileRecord, type PublicTaggoProfile } from './publicProfile'
+import { assertTaggoTransition } from './taggoLifecycle'
+import type { TaggoLifecycleStatus } from './qrTypes'
 
 const PROFILE_STORAGE_KEY = 'taggo-demo-public-profiles'
 
@@ -92,17 +94,21 @@ export class LocalQrRepository implements QrRepository {
     if (!title || !isValidDestinationUrl(destinationUrl)) {
       throw new Error('Mise à jour QR invalide.')
     }
+    const currentLifecycle = current.lifecycleStatus ?? 'activated'
+    const nextLifecycleStatus = updates.status === 'active'
+      ? 'active'
+      : updates.status === 'inactive'
+        ? 'inactive'
+        : currentLifecycle
+    if (nextLifecycleStatus !== currentLifecycle) {
+      assertTaggoTransition(currentLifecycle, nextLifecycleStatus)
+    }
     const updated: StoredQr = {
       ...current,
       title,
       destinationUrl,
       status: updates.status ?? current.status,
-      lifecycleStatus: updates.status === 'active'
-        ? 'active'
-        : updates.status === 'inactive'
-          ? 'inactive'
-          : current.lifecycleStatus,
-      ownerId: updates.ownerId ?? current.ownerId,
+      lifecycleStatus: nextLifecycleStatus,
       updatedAt: new Date().toISOString(),
     }
     qrs[index] = updated
@@ -140,10 +146,42 @@ export class LocalQrRepository implements QrRepository {
     return 'unavailable'
   }
 
+  assignTagToUser(id: string, ownerId: string): QrRecord | null {
+    const qrs = readStore()
+    const index = qrs.findIndex((item) => item.id === id)
+    if (index === -1) return null
+    const current = qrs[index]
+    if (current.ownerId) return null
+    if (current.lifecycleStatus !== 'available' && current.lifecycleStatus !== 'reserved') return null
+    const now = new Date().toISOString()
+    qrs[index] = {
+      ...current,
+      ownerId,
+      lifecycleStatus: 'assigned',
+      assignedAt: now,
+      updatedAt: now,
+    }
+    writeStore(qrs)
+    return toRecord(qrs[index])
+  }
+
   activate(publicId: string, ownerId: string): QrRecord | null {
     const qr = this.getByPublicId(publicId)
-    if (!qr || qr.lifecycleStatus !== 'assigned' || qr.ownerId) return null
-    return this.update(qr.id, { ownerId, status: 'active' }, undefined)
+    if (!qr || qr.lifecycleStatus !== 'assigned' || (qr.ownerId && qr.ownerId !== ownerId)) return null
+    const qrs = readStore()
+    const index = qrs.findIndex((item) => item.id === qr.id)
+    if (index === -1) return null
+    const now = new Date().toISOString()
+    qrs[index] = {
+      ...qrs[index],
+      ownerId,
+      lifecycleStatus: 'activated',
+      status: 'draft',
+      activatedAt: now,
+      updatedAt: now,
+    }
+    writeStore(qrs)
+    return toRecord(qrs[index])
   }
 
   getPublicProfile(qrId: string, ownerId?: string): PublicProfileRecord | null {
@@ -157,6 +195,27 @@ export class LocalQrRepository implements QrRepository {
     profiles[qrId] = input
     writeProfiles(profiles)
     return input
+  }
+
+  transition(id: string, to: TaggoLifecycleStatus, ownerId?: string): QrRecord | null {
+    const qrs = readStore()
+    const index = qrs.findIndex((item) => item.id === id)
+    if (index === -1) return null
+    const current = qrs[index]
+    if (ownerId && current.ownerId !== ownerId) return null
+    assertTaggoTransition(current.lifecycleStatus, to)
+    const now = new Date().toISOString()
+    qrs[index] = {
+      ...current,
+      lifecycleStatus: to,
+      status: to === 'active' ? 'active' : to === 'inactive' ? 'inactive' : current.status,
+      reservedAt: to === 'reserved' ? current.reservedAt ?? now : current.reservedAt,
+      assignedAt: to === 'assigned' ? current.assignedAt ?? now : current.assignedAt,
+      activatedAt: to === 'activated' ? current.activatedAt ?? now : current.activatedAt,
+      updatedAt: now,
+    }
+    writeStore(qrs)
+    return toRecord(qrs[index])
   }
 }
 

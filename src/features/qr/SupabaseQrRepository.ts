@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { buildTagCode } from './tagCode'
 import type { QrRepository } from './QrRepository'
 import type { CreateQrInput, PublicTaggoState, QrRecord, UpdateQrInput } from './qrTypes'
+import type { TaggoLifecycleStatus } from './qrTypes'
 import { toPublicTaggoProfile, type PublicProfileInput, type PublicProfileRecord, type PublicTaggoProfile } from './publicProfile'
 
 type SupabaseQr = {
@@ -15,6 +16,9 @@ type SupabaseQr = {
   lifecycle_status: QrRecord['lifecycleStatus']
   created_at: string
   updated_at: string | null
+  reserved_at: string | null
+  assigned_at: string | null
+  activated_at: string | null
 }
 
 type SupabasePublicProfile = {
@@ -40,6 +44,9 @@ function toRecord(row: SupabaseQr): QrRecord {
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at ?? undefined,
+    reservedAt: row.reserved_at ?? undefined,
+    assignedAt: row.assigned_at ?? undefined,
+    activatedAt: row.activated_at ?? undefined,
   }
 }
 
@@ -101,6 +108,25 @@ export class SupabaseQrRepository implements QrRepository {
     if (!ownerId) return null
     const { data, error } = await requireClient().rpc('activate_taggo', {
       p_public_id: publicId.trim().toUpperCase(),
+    })
+    if (error) throw error
+    return data ? toRecord(data as SupabaseQr) : null
+  }
+
+  async transition(id: string, to: TaggoLifecycleStatus, ownerId?: string): Promise<QrRecord | null> {
+    if (!ownerId) return null
+    const { data, error } = await requireClient().rpc('transition_taggo', {
+      p_qr_id: id,
+      p_target_status: to,
+    })
+    if (error) throw error
+    return data ? toRecord(data as SupabaseQr) : null
+  }
+
+  async assignTagToUser(id: string, ownerId: string): Promise<QrRecord | null> {
+    if (!ownerId) return null
+    const { data, error } = await requireClient().rpc('assign_taggo_to_user', {
+      p_qr_id: id,
     })
     if (error) throw error
     return data ? toRecord(data as SupabaseQr) : null

@@ -10,3 +10,14 @@ export function buildAuthRedirectUrl(pathname: string, baseOrigin?: string): str
   const normalizedPath = pathname.startsWith('/') ? pathname : `/${pathname}`
   return `${getOriginForAuth(baseOrigin)}${normalizedPath}`
 }
+
+export function getSafeAuthDestination(value: string | null): string {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/dashboard'
+
+  const pathname = value.split('?')[0].split('#')[0]
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/') || pathname.startsWith('/activate/')) {
+    return value
+  }
+
+  return '/dashboard'
+}

@@ -51,6 +51,18 @@ export class SupabaseAuthRepository implements AuthRepository {
     return toUser(data.user)
   }
 
+  async requestPasswordReset(email: string): Promise<void> {
+    const { error } = await requireClient().auth.resetPasswordForEmail(email, {
+      redirectTo: buildAuthRedirectUrl('/reset-password'),
+    })
+    if (error) throw error
+  }
+
+  async updatePassword(password: string): Promise<void> {
+    const { error } = await requireClient().auth.updateUser({ password })
+    if (error) throw error
+  }
+
   async signOut(): Promise<void> {
     const { error } = await requireClient().auth.signOut()
     if (error) throw error

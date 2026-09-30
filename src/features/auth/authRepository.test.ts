@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LocalAuthRepository } from './LocalAuthRepository'
+import { DEMO_USER_IDS } from '../../lib/demoAuth'
 
 describe('LocalAuthRepository', () => {
   beforeEach(() => {
@@ -9,6 +10,7 @@ describe('LocalAuthRepository', () => {
   it('seeds demo users and signs in with demo credentials', async () => {
     const repo = new LocalAuthRepository()
     const user = await repo.signIn('demo@taggo.local', 'DemoPass123!')
+    expect(user.id).toBe(DEMO_USER_IDS.demo)
     expect(user.email).toBe('demo@taggo.local')
     expect(repo.getCurrentUser()?.email).toBe('demo@taggo.local')
     expect(repo.getSession().user?.email).toBe('demo@taggo.local')

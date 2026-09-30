@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { isSupabaseConfigured } from '../lib/supabase'
+import { getSafeAuthDestination } from '../lib/runtime'
 import { isValidEmail, isValidPassword } from '../lib/validators'
 
 const DEMO_ACCOUNTS = [
@@ -23,11 +23,11 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { signIn } = useAuth()
+  const { mode, signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const returnTo = new URLSearchParams(location.search).get('returnTo')
-  const destination = returnTo?.startsWith('/') ? returnTo : '/dashboard'
+  const destination = getSafeAuthDestination(returnTo)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -113,9 +113,14 @@ export function LoginPage() {
           <button type="submit" className="primary-button" disabled={loading}>
             {loading ? 'Connexion...' : 'Se connecter'}
           </button>
+          {mode === 'supabase' ? (
+            <Link to="/forgot-password" className="link-button">
+              Mot de passe oublié ?
+            </Link>
+          ) : null}
         </form>
 
-        {!isSupabaseConfigured ? (
+        {mode === 'demo' ? (
           <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #ddd' }}>
             <p style={{ fontSize: '0.875rem', color: '#666', marginBottom: '0.5rem' }}>
               🧪 Comptes de démonstration :
@@ -135,6 +140,10 @@ export function LoginPage() {
               ))}
             </div>
           </div>
+        ) : null}
+
+        {mode === 'demo' ? (
+          <p className="auth-link">Mode démonstration locale uniquement. Aucun compte réel ne doit être utilisé ici.</p>
         ) : null}
 
         <p className="auth-link">

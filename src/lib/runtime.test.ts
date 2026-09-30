@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildAuthRedirectUrl, getOriginForAuth } from './runtime'
+import { buildAuthRedirectUrl, getOriginForAuth, getSafeAuthDestination } from './runtime'
 
 describe('runtime auth helpers', () => {
   it('builds a current-origin redirect to the login page', () => {
@@ -17,5 +17,12 @@ describe('runtime auth helpers', () => {
     } finally {
       globalThis.window = originalWindow
     }
+  })
+
+  it('allows only internal auth destinations', () => {
+    expect(getSafeAuthDestination('/activate/TGG-ABCDEFG')).toBe('/activate/TGG-ABCDEFG')
+    expect(getSafeAuthDestination('/dashboard/qr/new')).toBe('/dashboard/qr/new')
+    expect(getSafeAuthDestination('https://evil.example')).toBe('/dashboard')
+    expect(getSafeAuthDestination('//evil.example')).toBe('/dashboard')
   })
 })

@@ -21,7 +21,7 @@ const TRUST_POINTS = [
   {
     title: 'Gestion depuis le dashboard',
     description:
-      'Tu gères ton profil, les liens et les statistiques depuis un seul tableau de bord.',
+      'Tu gères ton profil et tes liens depuis un seul tableau de bord.',
   },
 ]
 

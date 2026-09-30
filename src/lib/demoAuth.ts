@@ -20,6 +20,11 @@ export type LocalAuthUser = {
   fullName: string
 }
 
+export const DEMO_USER_IDS = {
+  demo: 'demo-user',
+  test: 'test-user',
+} as const
+
 const STORAGE_KEY = 'taggo-demo-auth'
 const USERS_KEY = 'taggo-demo-users'
 
@@ -124,30 +129,35 @@ export function localSignOut() {
  */
 export function seedDemoUsers() {
   const users = getStoredUsers()
+  const demoUsers = [
+    {
+      id: DEMO_USER_IDS.demo,
+      email: 'demo@taggo.local',
+      password: 'DemoPass123!',
+      fullName: 'Demo User',
+    },
+    {
+      id: DEMO_USER_IDS.test,
+      email: 'test@taggo.local',
+      password: 'TestPass123!',
+      fullName: 'Test Account',
+    },
+  ]
 
-  if (users.size === 0) {
-    const demoUsers = [
-      {
-        id: 'demo-user',
-        email: 'demo@taggo.local',
-        password: 'DemoPass123!',
-        fullName: 'Demo User',
-      },
-      {
-        id: 'test-user',
-        email: 'test@taggo.local',
-        password: 'TestPass123!',
-        fullName: 'Test Account',
-      },
-    ]
+  let changed = false
+  demoUsers.forEach((demoUser) => {
+    const existing = users.get(demoUser.email)
+    if (!existing) {
+      users.set(demoUser.email, demoUser)
+      changed = true
+      return
+    }
 
-    demoUsers.forEach(({ email, password, fullName }) => {
-      if (!users.has(email)) {
-        const id = `user-${Math.random().toString(36).slice(2, 11)}`
-        users.set(email, { id, email, fullName, password })
-      }
-    })
+    if (existing.id !== demoUser.id) {
+      users.set(demoUser.email, { ...existing, id: demoUser.id })
+      changed = true
+    }
+  })
 
-    saveStoredUsers(users)
-  }
+  if (changed) saveStoredUsers(users)
 }

@@ -12,6 +12,8 @@ export interface AuthRepository {
   getCurrentUser(): Promise<AuthUser | null> | AuthUser | null
   signIn(email: string, password: string): Promise<AuthUser>
   signUp(input: SignUpInput): Promise<AuthUser>
+  requestPasswordReset(email: string): Promise<void>
+  updatePassword(password: string): Promise<void>
   signOut(): Promise<void> | void
   /** Subscribe to session changes. Returns an unsubscribe function. */
   onAuthStateChange(listener: (session: AuthSession) => void): () => void

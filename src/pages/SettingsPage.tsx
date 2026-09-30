@@ -1,10 +1,24 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { goBackSafely } from '../lib/navigation'
+import { sanitizeText } from '../lib/validators'
 
 export function SettingsPage() {
-  const { user, signOut } = useAuth()
+  const { profile, profileLoading, updateProfile, user, signOut } = useAuth()
   const navigate = useNavigate()
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [message, setMessage] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!profile) return
+    setFirstName(profile.firstName)
+    setLastName(profile.lastName)
+    setDisplayName(profile.displayName)
+  }, [profile])
 
   const handleBack = () => {
     goBackSafely(navigate, '/dashboard')
@@ -13,6 +27,29 @@ export function SettingsPage() {
   const handleSignOut = async () => {
     await signOut()
     navigate('/login', { replace: true })
+  }
+
+  const handleSaveProfile = async () => {
+    const values = {
+      firstName: sanitizeText(firstName).slice(0, 80),
+      lastName: sanitizeText(lastName).slice(0, 80),
+      displayName: sanitizeText(displayName).slice(0, 120),
+    }
+    if (!values.firstName || !values.lastName || !values.displayName) {
+      setMessage('Veuillez renseigner le prénom, le nom et le nom d’affichage.')
+      return
+    }
+
+    try {
+      setSaving(true)
+      setMessage('')
+      await updateProfile(values)
+      setMessage('Profil enregistré.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Impossible d’enregistrer le profil.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -31,8 +68,8 @@ export function SettingsPage() {
             <h2 style={{ marginBottom: '1rem' }}>Compte</h2>
             <div style={{ display: 'grid', gap: '0.75rem' }}>
               <div>
-                <p style={{ color: '#6d597a', marginBottom: '0.25rem' }}>Nom complet</p>
-                <strong>{user?.fullName || 'Non renseigné'}</strong>
+                <p style={{ color: '#6d597a', marginBottom: '0.25rem' }}>Nom d’affichage</p>
+                <strong>{profile?.displayName || user?.fullName || 'Non renseigné'}</strong>
               </div>
               <div>
                 <p style={{ color: '#6d597a', marginBottom: '0.25rem' }}>Email</p>
@@ -43,7 +80,24 @@ export function SettingsPage() {
 
           <section style={{ border: '1px solid rgba(43,45,66,0.12)', borderRadius: '18px', padding: '1.25rem' }}>
             <h2 style={{ marginBottom: '1rem' }}>Profil</h2>
-            <p style={{ color: '#6d597a' }}>La personnalisation du profil public sera disponible dans une prochaine étape.</p>
+            <div className="auth-form">
+              <label htmlFor="profile-first-name">
+                Prénom
+                <input id="profile-first-name" value={firstName} onChange={(event) => setFirstName(event.target.value)} disabled={profileLoading || saving} />
+              </label>
+              <label htmlFor="profile-last-name">
+                Nom
+                <input id="profile-last-name" value={lastName} onChange={(event) => setLastName(event.target.value)} disabled={profileLoading || saving} />
+              </label>
+              <label htmlFor="profile-display-name">
+                Nom d’affichage
+                <input id="profile-display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} disabled={profileLoading || saving} />
+              </label>
+              {message ? <p role="status" className="form-error">{message}</p> : null}
+              <button type="button" className="primary-button" onClick={() => void handleSaveProfile()} disabled={profileLoading || saving}>
+                {saving ? 'Enregistrement...' : 'Enregistrer le profil'}
+              </button>
+            </div>
           </section>
 
           <section style={{ border: '1px solid rgba(43,45,66,0.12)', borderRadius: '18px', padding: '1.25rem' }}>

@@ -11,14 +11,12 @@ import { RegisterPage } from '../pages/RegisterPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { TagRedirectPage } from '../pages/TagRedirectPage'
 import { ActivateTaggoPage } from '../pages/ActivateTaggoPage'
+import { LandingPage } from '../features/landing/LandingPage'
+import { PublicInfoPage } from '../pages/PublicInfoPage'
+import { PasswordResetPage } from '../pages/PasswordResetPage'
+import { PasswordUpdatePage } from '../pages/PasswordUpdatePage'
 import { useAuth } from '../context/AuthContext'
 import { Navigate } from 'react-router-dom'
-
-function AppEntry() {
-  const { user, loading } = useAuth()
-  if (loading) return null
-  return <Navigate to={user ? '/dashboard' : '/login'} replace />
-}
 
 function GuestRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -31,9 +29,15 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     children: [
-      { index: true, element: <AppEntry /> },
+      { index: true, element: <LandingPage /> },
       { path: 'login', element: <GuestRoute><LoginPage /></GuestRoute> },
       { path: 'register', element: <GuestRoute><RegisterPage /></GuestRoute> },
+      { path: 'forgot-password', element: <PasswordResetPage /> },
+      { path: 'reset-password', element: <PasswordUpdatePage /> },
+      { path: 'legal/terms', element: <PublicInfoPage page="terms" /> },
+      { path: 'legal/privacy', element: <PublicInfoPage page="privacy" /> },
+      { path: 'legal/notice', element: <PublicInfoPage page="notice" /> },
+      { path: 'contact', element: <PublicInfoPage page="contact" /> },
       {
         path: 'dashboard',
         element: (
