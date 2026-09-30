@@ -57,6 +57,14 @@ export class LocalAuthRepository implements AuthRepository {
     return user
   }
 
+  async requestPasswordReset(): Promise<void> {
+    throw new Error('La récupération du mot de passe nécessite Supabase Auth.')
+  }
+
+  async updatePassword(): Promise<void> {
+    throw new Error('La modification du mot de passe nécessite Supabase Auth.')
+  }
+
   signOut(): void {
     localSignOut()
     clearLocalAuthSession()

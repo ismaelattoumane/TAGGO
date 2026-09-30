@@ -32,9 +32,6 @@ create table if not exists public.qr_codes (
   description text,
   is_public boolean not null default false,
   lifecycle_status text,
-  reserved_at timestamptz,
-  assigned_at timestamptz,
-  activated_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -79,14 +76,14 @@ alter table public.qr_codes alter column lifecycle_status set default 'available
 alter table public.qr_codes alter column lifecycle_status set not null;
 alter table public.qr_codes drop constraint if exists qr_codes_lifecycle_status_check;
 alter table public.qr_codes add constraint qr_codes_lifecycle_status_check
-  check (lifecycle_status in ('available', 'reserved', 'assigned', 'activated', 'active', 'inactive', 'expired', 'suspended', 'replaced', 'cancelled'));
+  check (lifecycle_status in ('available', 'reserved', 'assigned', 'activated', 'active', 'inactive', 'replaced', 'cancelled'));
 
 create index if not exists idx_qr_codes_lifecycle_status on public.qr_codes(lifecycle_status);
 
 create table if not exists public.taggo_assignments (
   id uuid primary key default gen_random_uuid(),
   qr_code_id uuid not null unique references public.qr_codes(id) on delete restrict,
-  external_order_id text unique,
+  external_order_id text not null unique,
   external_product_id text,
   assigned_user_id uuid references public.profiles(id) on delete set null,
   status text not null default 'reserved' check (status in ('reserved', 'assigned', 'cancelled')),
@@ -100,35 +97,6 @@ create table if not exists public.taggo_assignments (
 
 create index if not exists idx_taggo_assignments_assigned_user_id
   on public.taggo_assignments(assigned_user_id);
-
-create table if not exists public.orders (
-  id uuid primary key default gen_random_uuid(),
-  customer_id uuid not null references public.profiles(id) on delete cascade,
-  status text not null default 'draft' check (status in ('draft', 'pending', 'ready_for_assignment', 'assigned', 'cancelled')),
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table if not exists public.order_items (
-  id uuid primary key default gen_random_uuid(),
-  order_id uuid not null references public.orders(id) on delete cascade,
-  product_type text not null default 'taggo' check (product_type in ('taggo')),
-  quantity integer not null default 1 check (quantity > 0),
-  taggo_id uuid references public.qr_codes(id) on delete set null,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create index if not exists idx_orders_customer_id on public.orders(customer_id);
-create index if not exists idx_order_items_order_id on public.order_items(order_id);
-create index if not exists idx_order_items_taggo_id on public.order_items(taggo_id);
-create unique index if not exists idx_order_items_taggo_unique_active
-  on public.order_items(taggo_id) where taggo_id is not null;
-
-alter table public.taggo_assignments
-  add column if not exists order_id uuid references public.orders(id) on delete set null;
-
-create index if not exists idx_taggo_assignments_order_id on public.taggo_assignments(order_id);
 
 alter table public.taggo_assignments enable row level security;
 
@@ -219,10 +187,6 @@ begin
   insert into public.taggo_assignments (qr_code_id, external_order_id, external_product_id)
   values (selected_qr.id, trim(p_external_order_id), nullif(trim(p_external_product_id), ''));
 
-  update public.qr_codes
-  set reserved_at = coalesce(reserved_at, now()), updated_at = now()
-  where id = selected_qr.id;
-
   select * into selected_qr from public.qr_codes where id = selected_qr.id;
   return selected_qr;
 end;
@@ -254,7 +218,7 @@ begin
   end if;
 
   update public.qr_codes
-  set lifecycle_status = 'assigned', assigned_at = coalesce(assigned_at, now()), updated_at = now()
+  set lifecycle_status = 'assigned', updated_at = now()
   where id = selected_qr_id
   returning * into selected_qr;
   return selected_qr;
@@ -293,191 +257,14 @@ declare
   selected_qr public.qr_codes;
 begin
   update public.qr_codes q
-  set owner_id = auth.uid(), lifecycle_status = 'activated', status = 'draft', activated_at = coalesce(activated_at, now()), updated_at = now()
+  set owner_id = auth.uid(), lifecycle_status = 'active', status = 'active', updated_at = now()
   where q.public_id = upper(trim(p_public_id))
     and q.lifecycle_status = 'assigned'
     and exists (
       select 1 from public.taggo_assignments a
       where a.qr_code_id = q.id and a.assigned_user_id = auth.uid() and a.status = 'assigned'
     )
-   returning q.* into selected_qr;
-   return selected_qr;
-end;
-$$;
-
-create or replace function public.assign_taggo_to_user(p_qr_id uuid)
-returns public.qr_codes
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  selected_qr public.qr_codes;
-begin
-  update public.qr_codes q
-  set owner_id = auth.uid(),
-      lifecycle_status = 'assigned',
-      assigned_at = coalesce(assigned_at, now()),
-      updated_at = now()
-  where q.id = p_qr_id
-    and q.owner_id is null
-    and q.lifecycle_status in ('available', 'reserved')
   returning q.* into selected_qr;
-  return selected_qr;
-end;
-$$;
-
-create or replace function public.transition_taggo(
-  p_qr_id uuid,
-  p_target_status text
-)
-returns public.qr_codes
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  selected_qr public.qr_codes;
-begin
-  update public.qr_codes q
-  set lifecycle_status = p_target_status,
-      status = case
-        when p_target_status = 'active' then 'active'
-        when p_target_status = 'inactive' then 'inactive'
-        else q.status
-      end,
-      updated_at = now()
-  where q.id = p_qr_id
-    and q.owner_id = auth.uid()
-    and (
-      (q.lifecycle_status = 'activated' and p_target_status = 'active')
-      or (q.lifecycle_status = 'active' and p_target_status in ('inactive', 'expired', 'suspended', 'replaced'))
-      or (q.lifecycle_status = 'inactive' and p_target_status in ('active', 'replaced', 'cancelled'))
-      or (q.lifecycle_status = 'expired' and p_target_status in ('active', 'replaced', 'cancelled'))
-      or (q.lifecycle_status = 'suspended' and p_target_status in ('active', 'replaced', 'cancelled'))
-    )
-  returning q.* into selected_qr;
-  return selected_qr;
-end;
-$$;
-
-create or replace function public.create_order()
-returns public.orders
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  new_order public.orders;
-begin
-  insert into public.orders (customer_id, status)
-  values (auth.uid(), 'draft')
-  returning * into new_order;
-  return new_order;
-end;
-$$;
-
-create or replace function public.reserve_taggo_for_order_id(p_order_id uuid)
-returns public.qr_codes
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  existing_assignment public.taggo_assignments;
-  selected_qr public.qr_codes;
-begin
-  if not exists (select 1 from public.orders where id = p_order_id) then
-    raise exception 'Order not found';
-  end if;
-
-  select * into existing_assignment
-  from public.taggo_assignments
-  where order_id = p_order_id
-  for update;
-
-  if found then
-    select * into selected_qr from public.qr_codes where id = existing_assignment.qr_code_id;
-    return selected_qr;
-  end if;
-
-  select * into selected_qr
-  from public.qr_codes
-  where lifecycle_status = 'available' and owner_id is null
-  order by created_at, id
-  for update skip locked
-  limit 1;
-
-  if not found then
-    raise exception 'No TAGGO code is available';
-  end if;
-
-  update public.qr_codes
-  set lifecycle_status = 'reserved',
-      reserved_at = coalesce(reserved_at, now()),
-      updated_at = now()
-  where id = selected_qr.id;
-
-  insert into public.taggo_assignments (qr_code_id, order_id, status)
-  values (selected_qr.id, p_order_id, 'reserved');
-
-  insert into public.order_items (order_id, product_type, quantity, taggo_id)
-  values (p_order_id, 'taggo', 1, selected_qr.id);
-
-  update public.orders
-  set status = 'ready_for_assignment', updated_at = now()
-  where id = p_order_id;
-
-  select * into selected_qr from public.qr_codes where id = selected_qr.id;
-  return selected_qr;
-end;
-$$;
-
-create or replace function public.assign_taggo_to_order_customer(p_order_id uuid, p_taggo_id uuid)
-returns public.qr_codes
-language plpgsql
-security definer set search_path = public
-as $$
-declare
-  order_customer uuid;
-  assigned_qr_id uuid;
-  selected_qr public.qr_codes;
-begin
-  select customer_id into order_customer
-  from public.orders
-  where id = p_order_id and customer_id = auth.uid();
-  if not found then
-    raise exception 'Order not found or not owned by current user';
-  end if;
-
-  update public.taggo_assignments a
-  set assigned_user_id = auth.uid(),
-      status = 'assigned',
-      assigned_at = coalesce(assigned_at, now()),
-      updated_at = now()
-  where a.qr_code_id = p_taggo_id
-    and a.order_id = p_order_id
-    and a.status = 'reserved'
-  returning a.qr_code_id into assigned_qr_id;
-
-  if not found then
-    raise exception 'TAGGO not reserved for this order or already assigned';
-  end if;
-
-  update public.qr_codes q
-  set owner_id = auth.uid(),
-      lifecycle_status = 'assigned',
-      assigned_at = coalesce(assigned_at, now()),
-      updated_at = now()
-  where q.id = assigned_qr_id
-    and q.owner_id is null
-    and q.lifecycle_status = 'reserved'
-  returning q.* into selected_qr;
-
-  if not found then
-    raise exception 'TAGGO not in reserved state or already owned';
-  end if;
-
-  update public.orders
-  set status = 'assigned', updated_at = now()
-  where id = p_order_id;
-
   return selected_qr;
 end;
 $$;
@@ -491,16 +278,6 @@ grant execute on function public.assign_taggo_to_customer(text, uuid) to service
 grant execute on function public.provision_taggo_stock(integer) to service_role;
 grant execute on function public.get_public_taggo_state(text) to anon, authenticated;
 grant execute on function public.activate_taggo(text) to authenticated;
-revoke execute on function public.assign_taggo_to_user(uuid) from public, anon;
-grant execute on function public.assign_taggo_to_user(uuid) to authenticated;
-revoke execute on function public.transition_taggo(uuid, text) from public, anon;
-grant execute on function public.transition_taggo(uuid, text) to authenticated;
-revoke execute on function public.create_order() from public, anon;
-grant execute on function public.create_order() to authenticated;
-revoke execute on function public.reserve_taggo_for_order_id(uuid) from public, anon;
-grant execute on function public.reserve_taggo_for_order_id(uuid) to authenticated;
-revoke execute on function public.assign_taggo_to_order_customer(uuid, uuid) from public, anon;
-grant execute on function public.assign_taggo_to_order_customer(uuid, uuid) to authenticated;
 
 alter table public.qr_codes drop constraint if exists qr_codes_destination_url_check;
 alter table public.qr_codes add constraint qr_codes_destination_url_check
@@ -515,8 +292,6 @@ alter table public.profiles enable row level security;
 alter table public.qr_codes enable row level security;
 alter table public.public_profiles enable row level security;
 alter table public.subscriptions enable row level security;
-alter table public.orders enable row level security;
-alter table public.order_items enable row level security;
 
 drop policy if exists "Users can view their own profile" on public.profiles;
 create policy "Users can view their own profile" on public.profiles
@@ -572,26 +347,3 @@ drop policy if exists "Users can manage their own subscriptions" on public.subsc
 drop policy if exists "Users can view their own subscriptions" on public.subscriptions;
 create policy "Users can view their own subscriptions" on public.subscriptions
 for select using (auth.uid() = user_id);
-
-drop policy if exists "Customers can view their own orders" on public.orders;
-create policy "Customers can view their own orders" on public.orders
-for select using (auth.uid() = customer_id);
-
-drop policy if exists "Customers can create orders" on public.orders;
-create policy "Customers can create orders" on public.orders
-for insert with check (auth.uid() = customer_id and status = 'draft');
-
-drop policy if exists "Customers can update their own orders" on public.orders;
-create policy "Customers can update their own orders" on public.orders
-for update using (auth.uid() = customer_id) with check (auth.uid() = customer_id);
-
-drop policy if exists "Customers can delete their own orders" on public.orders;
-create policy "Customers can delete their own orders" on public.orders
-for delete using (auth.uid() = customer_id);
-
-drop policy if exists "Users can view their order items" on public.order_items;
-create policy "Users can view their order items" on public.order_items
-for select using (exists (
-  select 1 from public.orders o
-  where o.id = order_items.order_id and o.customer_id = auth.uid()
-));

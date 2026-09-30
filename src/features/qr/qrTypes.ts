@@ -7,6 +7,8 @@ export type TaggoLifecycleStatus =
   | 'activated'
   | 'active'
   | 'inactive'
+  | 'expired'
+  | 'suspended'
   | 'replaced'
   | 'cancelled'
 
@@ -30,6 +32,9 @@ export type QrRecord = {
   lifecycleStatus?: TaggoLifecycleStatus
   createdAt: string
   updatedAt?: string
+  reservedAt?: string
+  assignedAt?: string
+  activatedAt?: string
 }
 
 export type CreateQrInput = {
@@ -39,5 +44,5 @@ export type CreateQrInput = {
 }
 
 export type UpdateQrInput = Partial<
-  Pick<QrRecord, 'title' | 'destinationUrl' | 'status' | 'ownerId'>
+  Pick<QrRecord, 'title' | 'destinationUrl' | 'status'>
 >

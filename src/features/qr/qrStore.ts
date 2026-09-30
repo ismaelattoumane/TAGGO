@@ -1,4 +1,5 @@
 import type { QrRecord, QrStatus, TaggoLifecycleStatus } from './qrTypes'
+import { DEMO_USER_IDS } from '../../lib/demoAuth'
 
 /**
  * LocalStorage-backed QrRepository.
@@ -20,6 +21,9 @@ export type StoredQr = {
   lifecycleStatus?: TaggoLifecycleStatus
   createdAt: string
   updatedAt?: string
+  reservedAt?: string
+  assignedAt?: string
+  activatedAt?: string
 }
 
 const seedQrs: StoredQr[] = [
@@ -30,7 +34,7 @@ const seedQrs: StoredQr[] = [
     destinationUrl: 'https://taggo.example/shop/collection-print',
     status: 'active',
     lifecycleStatus: 'active',
-    ownerId: 'demo-user',
+    ownerId: DEMO_USER_IDS.demo,
     createdAt: '2026-08-30T09:00:00.000Z',
   },
   {
@@ -40,7 +44,7 @@ const seedQrs: StoredQr[] = [
     destinationUrl: 'https://taggo.example/capsule',
     status: 'draft',
     lifecycleStatus: 'activated',
-    ownerId: 'demo-user',
+    ownerId: DEMO_USER_IDS.demo,
     createdAt: '2026-08-29T09:00:00.000Z',
   },
 ]

@@ -15,9 +15,10 @@ const ACCOUNT = [
 ]
 
 const LEGAL = [
-  { label: 'Confidentialité', href: '#' },
-  { label: 'Conditions', href: '#' },
-  { label: 'Mentions légales', href: '#' },
+  { label: 'Confidentialité', href: '/legal/privacy' },
+  { label: 'Conditions', href: '/legal/terms' },
+  { label: 'Mentions légales', href: '/legal/notice' },
+  { label: 'Contact', href: '/contact' },
 ]
 
 /**
@@ -69,13 +70,13 @@ export function LandingFooter() {
           <nav className="taggo-landing-footer__col" aria-label="Légal">
             <p className="taggo-landing-footer__col-title">Légal</p>
             {LEGAL.map((link) => (
-              <a
+              <Link
                 key={link.label}
-                href={link.href}
+                to={link.href}
                 className="taggo-landing-footer__link"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>

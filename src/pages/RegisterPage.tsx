@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getSafeAuthDestination } from '../lib/runtime'
 import { isValidEmail, isValidPassword, sanitizeText } from '../lib/validators'
 
 export function RegisterPage() {
@@ -14,7 +15,7 @@ export function RegisterPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const returnTo = new URLSearchParams(location.search).get('returnTo')
-  const destination = returnTo?.startsWith('/') ? returnTo : '/dashboard'
+  const destination = getSafeAuthDestination(returnTo)
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()

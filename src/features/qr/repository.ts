@@ -14,6 +14,8 @@ const unavailableQrRepository: QrRepository = {
   getPublicTaggoStatus: () => null,
   getPublicTaggoState: () => 'not_found',
   activate: async () => { throw new Error('Supabase doit être configuré pour la production.') },
+  transition: async () => { throw new Error('Supabase doit être configuré pour la production.') },
+  assignTagToUser: async () => { throw new Error('Supabase doit être configuré pour la production.') },
   getPublicProfile: () => null,
   savePublicProfile: async () => { throw new Error('Supabase doit être configuré pour la production.') },
 }

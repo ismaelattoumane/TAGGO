@@ -9,49 +9,101 @@ import {
 import { LocalAuthRepository } from '../features/auth/LocalAuthRepository'
 import { SupabaseAuthRepository } from '../features/auth/SupabaseAuthRepository'
 import type { AuthRepository } from '../features/auth/AuthRepository'
-import type { AuthUser } from '../features/auth/authTypes'
+import type { AuthMode, AuthUser } from '../features/auth/authTypes'
 import { AuthContext, type AuthContextValue } from './authContextValue'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { profileRepository } from '../features/profile/repository'
+import type { UpdateTaggoProfileInput, TaggoProfile } from '../features/profile/profileTypes'
 const unavailableAuthRepository: AuthRepository = {
   getSession: () => ({ user: null }),
   getCurrentUser: () => null,
   signIn: async () => { throw new Error('Supabase doit être configuré pour la production.') },
   signUp: async () => { throw new Error('Supabase doit être configuré pour la production.') },
+  requestPasswordReset: async () => { throw new Error('Supabase doit être configuré pour la récupération du mot de passe.') },
+  updatePassword: async () => { throw new Error('Supabase doit être configuré pour la modification du mot de passe.') },
   signOut: async () => undefined,
   onAuthStateChange: () => () => undefined,
 }
-const authRepository = isSupabaseConfigured
+
+export const authMode: AuthMode = isSupabaseConfigured
+  ? 'supabase'
+  : import.meta.env.DEV
+    ? 'demo'
+    : 'unavailable'
+
+const authRepository: AuthRepository = authMode === 'supabase'
   ? new SupabaseAuthRepository()
-  : import.meta.env.PROD
-    ? unavailableAuthRepository
-    : new LocalAuthRepository()
+  : authMode === 'demo'
+    ? new LocalAuthRepository()
+    : unavailableAuthRepository
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<TaggoProfile | null>(null)
+  const [profileLoading, setProfileLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
+    let sessionInitialized = false
+    let hasPendingSession = false
+    let pendingSession: AuthUser | null = null
+
+    const unsubscribe = authRepository.onAuthStateChange((session) => {
+      if (sessionInitialized) {
+        if (!cancelled) setUser(session.user)
+        return
+      }
+      hasPendingSession = true
+      pendingSession = session.user
+    })
+
     const restoreSession = async () => {
       try {
         const session = await authRepository.getSession()
-        if (!cancelled) setUser(session.user)
+        if (!cancelled) setUser(hasPendingSession ? pendingSession : session.user)
       } catch (error) {
         console.warn('Auth restore failed:', error)
         if (!cancelled) setUser(null)
       } finally {
+        sessionInitialized = true
         if (!cancelled) setLoading(false)
       }
     }
     void restoreSession()
-    const unsubscribe = authRepository.onAuthStateChange((session) => {
-      if (!cancelled) setUser(session.user)
-    })
     return () => {
       cancelled = true
       unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    if (!user) {
+      setProfile(null)
+      setProfileLoading(false)
+      return () => {
+        cancelled = true
+      }
+    }
+
+    setProfileLoading(true)
+    void Promise.resolve(profileRepository.getCurrentProfile())
+      .then((currentProfile) => {
+        if (!cancelled) setProfile(currentProfile)
+      })
+      .catch((error) => {
+        console.warn('Profile restore failed:', error)
+        if (!cancelled) setProfile(null)
+      })
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   const signIn = useCallback(async (email: string, password: string) => {
     const authUser = await authRepository.signIn(email, password)
@@ -63,14 +115,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authUser)
   }, [])
 
+  const requestPasswordReset = useCallback(async (email: string) => {
+    await authRepository.requestPasswordReset(email)
+  }, [])
+
+  const updatePassword = useCallback(async (password: string) => {
+    await authRepository.updatePassword(password)
+  }, [])
+
+  const updateProfile = useCallback(async (input: UpdateTaggoProfileInput) => {
+    const updatedProfile = await profileRepository.updateCurrentProfile(input)
+    if (!updatedProfile) throw new Error('Profil utilisateur introuvable.')
+    setProfile(updatedProfile)
+  }, [])
+
   const signOut = useCallback(async () => {
     await authRepository.signOut()
     setUser(null)
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, loading, signIn, signUp, signOut }),
-    [user, loading, signIn, signUp, signOut],
+    () => ({ user, loading, mode: authMode, profile, profileLoading, signIn, signUp, requestPasswordReset, updatePassword, updateProfile, signOut }),
+    [user, loading, profile, profileLoading, signIn, signUp, requestPasswordReset, updatePassword, updateProfile, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

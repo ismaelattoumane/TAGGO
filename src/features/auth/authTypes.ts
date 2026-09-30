@@ -21,3 +21,5 @@ export type SignUpInput = {
 }
 
 export type AuthStateListener = (session: AuthSession) => void
+
+export type AuthMode = 'demo' | 'supabase' | 'unavailable'

@@ -37,12 +37,12 @@ const FAQ_ITEMS = [
   {
     question: 'Comment fonctionnent les scans ?',
     answer:
-      "Chaque fois que quelqu'un scanne ton QR code, il accède à ton profil public. Tu peux consulter le nombre de scans depuis ton tableau de bord.",
+      "Chaque fois que quelqu'un scanne ton QR code, il accède à ton profil public. Le suivi détaillé des scans sera ajouté dans une prochaine version.",
   },
   {
     question: "Que se passe-t-il lorsque mon abonnement expire ?",
     answer:
-      "À l'expiration de ton abonnement, ton TAGGO et ton profil public peuvent être désactivés. Tu conserves tes données et peux réactiver ton TAGGO à tout moment en renouvelant ton abonnement.",
+      "Les modalités d'abonnement et de renouvellement seront précisées avant l'ouverture de la commercialisation. Aucun engagement commercial n'est proposé ici.",
   },
 ]
 

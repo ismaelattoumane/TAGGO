@@ -18,7 +18,7 @@ const statusLabels: Record<QrRecord['status'], string> = {
 }
 
 export function DashboardPage() {
-  const { user, signOut } = useAuth()
+  const { profile, user, signOut } = useAuth()
   const navigate = useNavigate()
   const [qrList, setQrList] = useState<QrRecord[]>([])
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'inactive' | 'archived'>('all')
@@ -75,7 +75,10 @@ export function DashboardPage() {
           <div>
             <Eyebrow>Tableau de bord</Eyebrow>
             <h1>Mes QR TAGGO</h1>
-            <p className="topbar-subtitle">Connecté en tant que {user?.email ?? 'Utilisateur'}</p>
+            <p className="topbar-subtitle">
+              {profile?.displayName ? `${profile.displayName} · ` : ''}
+              {user?.email ?? 'Utilisateur'}
+            </p>
           </div>
           <Link to="/dashboard/qr/new" className="primary-button">Créer un TAGGO</Link>
         </header>
