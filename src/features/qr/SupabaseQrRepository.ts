@@ -28,6 +28,13 @@ type SupabasePublicProfile = {
   profile_url: string | null
 }
 
+/**
+ * Colonnes de la vue publique `public_taggo_cards`. Volontairement restreint :
+ * ni `owner_id`, ni horodatage de cycle de vie, ni référence de paiement ou
+ * d'abonnement n'y sont projetés, donc aucun ne peutfuiter.
+ */
+type SupabasePublicCard = Pick<SupabaseQr, 'id' | 'public_id' | 'title' | 'destination_url' | 'status'>
+
 function requireClient() {
   if (!supabase) throw new Error('La configuration Supabase est manquante.')
   return supabase
@@ -50,8 +57,25 @@ function toRecord(row: SupabaseQr): QrRecord {
   }
 }
 
-function validateInput(title: string, destinationUrl: string) {
-  const cleanedTitle = sanitizeText(title).slice(0, 80)
+/**
+ * La vue publique ne projette que cinq colonnes : ni `owner_id`, ni horodatage
+ * de cycle de vie. `QrRecord.createdAt` est donc renseigné à vide — la page
+ * publique n'a aucune date à afficher, et `getPublicTaggoProfile` /
+ * `getPublicTaggoStatus` n'utilisent que `id`, `publicId`, `title`,
+ * `destinationUrl` et `status`.
+ */
+function toPublicCardRecord(row: SupabasePublicCard): QrRecord {
+  return {
+    id: row.id,
+    publicId: row.public_id,
+    title: row.title ?? '',
+    destinationUrl: row.destination_url ?? '',
+    status: row.status,
+    createdAt: '',
+  }
+}
+
+function validateInput(title: string, destinationUrl: string) {  const cleanedTitle = sanitizeText(title).slice(0, 80)
   const cleanedDestination = destinationUrl.trim()
   if (!cleanedTitle || !isValidDestinationUrl(cleanedDestination)) {
     throw new Error('Titre ou destination QR invalide.')
@@ -75,9 +99,13 @@ export class SupabaseQrRepository implements QrRepository {
   }
 
   async getByPublicId(publicId: string): Promise<QrRecord | null> {
-    const { data, error } = await requireClient().from('qr_codes').select('*').eq('public_id', publicId.trim().toUpperCase()).eq('status', 'active').eq('is_public', true).not('destination_url', 'is', null).maybeSingle()
+    // Lecture PUBLIQUE : elle passe par `public_taggo_cards`, une vue à colonnes
+    // explicites. La table `qr_codes` n'est plus lisible par l'anonyme, et sa RLS
+    // ne filtres que des lignes : passer par elle exposait `owner_id` au moindre
+    // `select *`. La vue ne projette que ce que la page publique affiche.
+    const { data, error } = await requireClient().from('public_taggo_cards').select('id, public_id, title, destination_url, status').eq('public_id', publicId.trim().toUpperCase()).maybeSingle()
     if (error) throw error
-    return data ? toRecord(data as SupabaseQr) : null
+    return data ? toPublicCardRecord(data as SupabasePublicCard) : null
   }
 
   async getPublicTaggoProfile(publicId: string): Promise<PublicTaggoProfile | null> {
@@ -123,13 +151,27 @@ export class SupabaseQrRepository implements QrRepository {
     return data ? toRecord(data as SupabaseQr) : null
   }
 
-  async assignTagToUser(id: string, ownerId: string): Promise<QrRecord | null> {
-    if (!ownerId) return null
-    const { data, error } = await requireClient().rpc('assign_taggo_to_user', {
-      p_qr_id: id,
-    })
-    if (error) throw error
-    return data ? toRecord(data as SupabaseQr) : null
+  /**
+   * Volontairement refusée en mode Supabase.
+   *
+   * La RPC `assign_taggo_to_user` a été retirée du périmètre client
+   * (migration `20260931130000_taggo_hardening_followup.sql`) : elle
+   * n'exigeait ni achat, ni commande, ni affectation préalable, et permettait
+   * donc à n'importe quel compte authentifié de s'attribuer un TAGGO du stock —
+   * y compris un TAGGO déjà réservé pour la commande payée d'un tiers. Elle
+   * contournait exactement ce que la protection du cycle de vie cherche à
+   * garantir.
+   *
+   * Les affectations légitimes passent par `activate_taggo` (TAGGO attribué lors
+   * d'une commande), `assign_taggo_to_order_customer` (commande vérifiée) ou le
+   * webhook Stripe. Aucune page n'appelle cette méthode : elle n'existe plus
+   * que pour le dépôt local de démonstration, où elle écrit dans
+   * LocalStorage et non en base.
+   */
+  async assignTagToUser(_id: string, _ownerId: string): Promise<QrRecord | null> {
+    throw new Error(
+      "L'affectation directe d'un TAGGO n'est pas autorisée. Un TAGGO est attribué par une commande ou par le serveur.",
+    )
   }
 
   async getPublicProfile(qrId: string, ownerId?: string): Promise<PublicProfileRecord | null> {
@@ -190,20 +232,28 @@ export class SupabaseQrRepository implements QrRepository {
     const current = await this.getById(id, ownerId)
     if (!current) return null
     const values = validateInput(updates.title ?? current.title, updates.destinationUrl ?? current.destinationUrl)
-    const status = updates.status ?? current.status
-    const { data, error } = await requireClient().from('qr_codes').update({
-      title: values.title,
-      destination_url: values.destinationUrl,
-      status,
-      lifecycle_status: status === 'active'
-        ? 'active'
-        : status === 'inactive'
-          ? 'inactive'
-          : current.lifecycleStatus ?? 'activated',
-      is_public: status === 'active',
-    }).eq('id', id).eq('owner_id', ownerId).select('*').maybeSingle()
+
+    // Contenu du TAGGO : colonnes accordées au client (`grant update (title,
+    // description, destination_url)`), le reste est refusé par PostgreSQL.
+    const content: UpdateQrInput = { title: values.title, destinationUrl: values.destinationUrl }
+    const { data: saved, error } = await requireClient().from('qr_codes').update(content).eq('id', id).eq('owner_id', ownerId).select('*').maybeSingle()
     if (error) throw error
-    return data ? toRecord(data as SupabaseQr) : null
+
+    const status = updates.status ?? current.status
+    if (status !== current.status) {
+      // `status` / `lifecycle_status` / `is_public` sont des champs serveur :
+      // PostgreSQL refuse toute écriture directe. Le seul chemin autorisé est
+      // `set_taggo_status`, qui porte les mêmes garde-fous d'abonnement et de
+      // cycle de vie que `transition_taggo`.
+      const { data: transitioned, error: statusError } = await requireClient().rpc('set_taggo_status', {
+        p_qr_id: id,
+        p_status: status,
+      })
+      if (statusError) throw statusError
+      return transitioned ? toRecord(transitioned as SupabaseQr) : (saved ? toRecord(saved as SupabaseQr) : null)
+    }
+
+    return saved ? toRecord(saved as SupabaseQr) : null
   }
 
   async remove(id: string, ownerId?: string): Promise<boolean> {

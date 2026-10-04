@@ -113,7 +113,10 @@ begin
   loop
     candidate := 'TGG-';
     for index in 1..7 loop
-      candidate := candidate || substr(alphabet, (get_byte(gen_random_bytes(1), 0) % length(alphabet)) + 1, 1);
+      -- `extensions.` est explicite : sur Supabase, pgcrypto est installé dans
+      -- le schéma `extensions`, et `search_path = public` (plus `security
+      -- definer`) interdit de compter sur une résolution implicite.
+      candidate := candidate || substr(alphabet, (get_byte(extensions.gen_random_bytes(1), 0) % length(alphabet)) + 1, 1);
     end loop;
     exit when not exists (select 1 from public.qr_codes where public_id = candidate);
   end loop;

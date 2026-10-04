@@ -1,12 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { qrRepository } from '../features/qr/repository'
+import { recordTaggoScan } from '../features/analytics/scanClient'
 import type { PublicTaggoProfile } from '../features/qr/publicProfile'
 import type { QrStatus } from '../features/qr/qrTypes'
 import type { PublicTaggoState } from '../features/qr/qrTypes'
 import { Alert } from '../components/Alert'
 import { isValidDestinationUrl } from '../lib/validators'
 
+/**
+ * ÉTAPE 11 — Scan enregistré côté serveur.
+ *
+ * L'enregistrement est déclenché en parallèle de la résolution du TAGGO et
+ * N'EST JAMAIS attendu avant l'affichage : `recordTaggoScan` absorbe ses
+ * propres erreurs. Une panne analytics, un 404, un 500 ou une coupure réseau
+ * n'affichent rien au visiteur et n'empêchent pas l'ouverture de la page.
+ *
+ * Un seul enregistrement par code par montage du composant : un rechargement de
+ * la page compte un nouveau scan (comportement attendu), un double rendu React
+ * en mode strict n'en compte qu'un.
+ */
 export function PublicQrPage() {
   const { publicId, tag } = useParams()
   const code = tag ?? publicId
@@ -15,6 +28,7 @@ export function PublicQrPage() {
   const [publicState, setPublicState] = useState<PublicTaggoState>('not_found')
   const [loaded, setLoaded] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const scanRequestedFor = useRef<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -39,14 +53,24 @@ export function PublicQrPage() {
     void load()
   }, [code])
 
+  // Analytics : déclenché, jamais attendu, jamais affiché au visiteur.
+  useEffect(() => {
+    if (!code) return
+    if (scanRequestedFor.current === code) return
+
+    scanRequestedFor.current = code
+    void recordTaggoScan(code)
+  }, [code])
+
   useEffect(() => {
     if (!profile) return
     document.title = `${profile.displayName ?? 'TAGGO'} — TAGGO`
     const robots = document.querySelector('meta[name="robots"]')
+    const previousRobots = robots?.getAttribute('content')
     robots?.setAttribute('content', 'index, follow')
     return () => {
       document.title = 'TAGGO — Gestion des QR codes'
-      robots?.setAttribute('content', 'noindex, nofollow')
+      if (previousRobots) robots?.setAttribute('content', previousRobots)
     }
   }, [profile])
 
@@ -68,6 +92,32 @@ export function PublicQrPage() {
           <p className="public-kicker">TAGGO / PAGE PUBLIQUE</p>
           <h1>Service temporairement indisponible</h1>
           <Alert type="error">Impossible de charger ce TAGGO pour le moment. Réessayez plus tard.</Alert>
+        </section>
+      </main>
+    )
+  }
+
+  if (publicState === 'expired' || publicState === 'subscription_required') {
+    // ETAPE 12 — TAGGO dont la periode est terminee, ou TAGGO SANS abonnement.
+    //
+    // Les DEUX etats sont rendus par le meme écran volontairement : du point de
+    // vue du visiteur la situation est identique (rien ne s'ouvre) et surtout la
+    // distinction exacte (« votre abonnement a expiré » vs « aucun abonnement
+    // n'existe pour ce TAGGO ») n'est visible que du PROPRIETAIRE, dans son
+    // tableau de bord. L'afficher ici révélerait au visiteur la situation
+    // commerciale d'un TAGGO qui n'est pas le sien.
+    //
+    // Message minimal : ni propriétaire, ni email, ni date d'expiration, ni
+    // information de facturation. Rien de ce qui est en base n'est révélé.
+    return (
+      <main className="public-page">
+        <section className="public-card public-state-card">
+          <p className="public-kicker">TAGGO / PAGE PUBLIQUE</p>
+          <h1>TAGGO temporairement indisponible</h1>
+          <Alert type="error">
+            Ce TAGGO n’est plus utilisable pour le moment. Contactez son propriétaire pour plus
+            d’informations.
+          </Alert>
         </section>
       </main>
     )

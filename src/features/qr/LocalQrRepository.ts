@@ -6,6 +6,11 @@ import type { QrRepository } from './QrRepository'
 import type { CreateQrInput, PublicTaggoState, QrRecord, UpdateQrInput } from './qrTypes'
 import { toPublicTaggoProfile, type PublicProfileInput, type PublicProfileRecord, type PublicTaggoProfile } from './publicProfile'
 import { assertTaggoTransition } from './taggoLifecycle'
+import {
+  localSubscriptionAllowsPublic,
+  readLocalSubscriptions,
+  sweepLocalSubscriptions,
+} from './localSubscriptionStore'
 import type { TaggoLifecycleStatus } from './qrTypes'
 
 const PROFILE_STORAGE_KEY = 'taggo-demo-public-profiles'
@@ -139,10 +144,38 @@ export class LocalQrRepository implements QrRepository {
   getPublicTaggoState(publicId: string): PublicTaggoState {
     const qr = this.getByPublicId(publicId)
     if (!qr) return 'not_found'
-    if (qr.status === 'active' && qr.lifecycleStatus === 'active') return 'active'
-    if (qr.lifecycleStatus === 'available' || qr.lifecycleStatus === 'reserved' || qr.lifecycleStatus === 'assigned' || qr.lifecycleStatus === 'activated') {
+
+    // ETAPE 12 — ordre de priorite identique a `get_public_taggo_state` :
+    //   1. periode echue        -> expired
+    //   2. cycle de vie avant `active` -> unactivated (« pas encore active » est
+    //      plus exact que « pas d'abonnement » : le visiteur a une action a faire)
+    //   3. actif SANS periode   -> subscription_required
+    //   4. actif AVEC periode   -> active
+    //   5. sinon                -> unavailable
+    //
+    // Le balayage est declenche avant le calcul, comme en base. Il est
+    // volontairement sans effet sur le resultat : la visibilite depend
+    // directement de `endsAt`, donc une periode echue est deja bloquee meme si le
+    // balayage n'a pas tourne.
+    sweepLocalSubscriptions()
+
+    const subscription = readLocalSubscriptions()[qr.id]
+    const allowsPublic = localSubscriptionAllowsPublic(subscription)
+
+    // Une periode existe et elle est echue : c'est une EXPIRATION.
+    if (!allowsPublic && subscription) return 'expired'
+    // Cycle de vie anterieur a `active` : actionnable par le visiteur.
+    if (
+      qr.lifecycleStatus === 'available'
+      || qr.lifecycleStatus === 'reserved'
+      || qr.lifecycleStatus === 'assigned'
+      || qr.lifecycleStatus === 'activated'
+    ) {
       return 'unactivated'
     }
+    // Aucune periode : l'acces est refuse, et ce n'est PAS une expiration.
+    if (!allowsPublic) return 'subscription_required'
+    if (qr.status === 'active' && qr.lifecycleStatus === 'active') return 'active'
     return 'unavailable'
   }
 

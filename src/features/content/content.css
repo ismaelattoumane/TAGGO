@@ -1,0 +1,248 @@
+/* ---------- TAGGO — Pages de contenu public : À propos, FAQ, légal, contact ---------- */
+
+.taggo-content-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+.taggo-content__skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: var(--z-modal);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface-elevated);
+  color: var(--color-primary);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+}
+
+.taggo-content__skip-link:focus {
+  left: var(--space-4);
+  top: var(--space-4);
+}
+
+.taggo-content {
+  flex: 1;
+  width: 100%;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-5) var(--space-10);
+  display: grid;
+  gap: var(--space-8);
+}
+
+.taggo-content__header {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.taggo-content__title {
+  font-size: var(--text-display);
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+
+.taggo-content__lead {
+  margin: 0;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+  line-height: var(--leading-relaxed);
+  max-width: 62ch;
+}
+
+.taggo-content__toc {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.taggo-content__toc-title {
+  margin: 0 0 var(--space-3);
+  font-weight: 700;
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.taggo-content__toc-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-body-sm);
+}
+
+.taggo-content__toc-list a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.taggo-content__section {
+  display: grid;
+  gap: var(--space-3);
+  scroll-margin-top: 6rem;
+}
+
+.taggo-content__section-title {
+  font-size: var(--text-h2);
+  line-height: var(--leading-tight);
+  margin: 0;
+}
+
+.taggo-content__paragraph {
+  margin: 0;
+  color: var(--color-text);
+  line-height: var(--leading-relaxed);
+}
+
+.taggo-content__note {
+  margin: 0;
+  padding: var(--space-4);
+  background: var(--color-warning-bg);
+  border-left: 4px solid var(--color-warning-border);
+  border-radius: var(--radius-md);
+  color: var(--color-warning-text);
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-normal);
+}
+
+.taggo-content__list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: var(--space-2);
+  color: var(--color-text);
+  line-height: var(--leading-relaxed);
+}
+
+.taggo-content__definitions {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.taggo-content__definition {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.taggo-content__term {
+  font-weight: 700;
+  font-size: var(--text-body-sm);
+}
+
+.taggo-content__definition-value {
+  margin: 0;
+  color: var(--color-text);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- FAQ ---------- */
+
+.taggo-faq-page__category {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.taggo-faq-page__category-title {
+  font-size: var(--text-h2);
+  margin: 0;
+}
+
+.taggo-faq-page__list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* ---------- Contact ---------- */
+
+.taggo-contact__channels {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.taggo-contact__channel {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.taggo-contact__channel-label {
+  margin: 0;
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.taggo-contact__channel-value {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.taggo-contact__form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.taggo-contact__field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.taggo-contact__field label {
+  font-weight: 600;
+  font-size: var(--text-label);
+}
+
+.taggo-contact__field input,
+.taggo-contact__field textarea {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.taggo-contact__field input:focus-visible,
+.taggo-contact__field textarea:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.taggo-contact__error {
+  margin: 0;
+  color: var(--color-error);
+  font-weight: 600;
+  font-size: var(--text-body-sm);
+}
+
+.taggo-contact__hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taggo-content__section {
+    scroll-behavior: auto;
+  }
+}

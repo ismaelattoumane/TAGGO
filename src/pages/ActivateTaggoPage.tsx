@@ -4,8 +4,10 @@ import { Alert } from '../components/Alert'
 import { useAuth } from '../context/AuthContext'
 import { qrRepository } from '../features/qr/repository'
 import { normalizeTagCode } from '../features/qr/tagCode'
+import { usePageSeo } from '../lib/usePageSeo'
 
 export function ActivateTaggoPage() {
+  usePageSeo({ title: 'Activer mon TAGGO — TAGGO', description: 'Activez votre TAGGO et connectez-le à votre compte.', noindex: true })
   const { tag } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()

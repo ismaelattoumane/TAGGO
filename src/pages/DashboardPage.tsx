@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/Badge/Badge'
 import { EmptyState } from '../components/ui/State/State'
 import { Eyebrow } from '../components/ui/Typography/Typography'
 import { SelectField } from '../components/ui/Field/Field'
+import { usePageSeo } from '../lib/usePageSeo'
 
 const statusLabels: Record<QrRecord['status'], string> = {
   active: 'Actif',
@@ -18,6 +19,7 @@ const statusLabels: Record<QrRecord['status'], string> = {
 }
 
 export function DashboardPage() {
+  usePageSeo({ title: 'Tableau de bord — TAGGO', description: 'Tableau de bord de votre compte TAGGO : vos vêtements connectés et vos QR codes.', noindex: true })
   const { profile, user, signOut } = useAuth()
   const navigate = useNavigate()
   const [qrList, setQrList] = useState<QrRecord[]>([])

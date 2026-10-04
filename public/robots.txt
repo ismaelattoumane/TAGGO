@@ -1,6 +1,28 @@
+# TAGGO — robots.txt (étape 10)
+#
+# Le site est une SPA : les pages publiques sont crawlables et leurs métadonnées
+# (title, description, canonical, robots, Open Graph) sont écrites par
+# `usePageSeo` après le rendu. Les routes privées sont bloquées ici ET marquées
+# `noindex, nofollow` côté client.
+#
+# Une directive `Sitemap:` sera ajoutée ici dès que `APP_URL` sera renseignée
+# (le endpoint /sitemap.xml refuse de répondre tant que le domaine n'est pas
+# connu : aucune URL de sitemap n'est inventée).
+
 User-agent: *
 Disallow: /dashboard
 Disallow: /login
 Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /cart
+Disallow: /checkout
+Disallow: /activate/
+Allow: /shop
+Allow: /about
+Allow: /faq
+Allow: /contact
+Allow: /shipping
+Allow: /legal/
 Allow: /t/
 Allow: /qr/

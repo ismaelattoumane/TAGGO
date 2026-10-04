@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
+import { CartProvider } from './context/CartContext'
 import { recordCurrentAppPath } from './lib/navigation'
 import './styles/tokens.css'
 import './components/Alert.css'
@@ -22,12 +23,12 @@ function App() {
 
   return (
     <AuthProvider>
-      <>
+      <CartProvider>
         <div className="app-bar">
           TAGGO
         </div>
         <Outlet />
-      </>
+      </CartProvider>
     </AuthProvider>
   )
 }

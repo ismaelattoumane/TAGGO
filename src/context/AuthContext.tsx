@@ -9,6 +9,7 @@ import {
 import { LocalAuthRepository } from '../features/auth/LocalAuthRepository'
 import { SupabaseAuthRepository } from '../features/auth/SupabaseAuthRepository'
 import type { AuthRepository } from '../features/auth/AuthRepository'
+import { safeAuthErrorLabel } from '../features/auth/authErrors'
 import type { AuthMode, AuthUser } from '../features/auth/authTypes'
 import { AuthContext, type AuthContextValue } from './authContextValue'
 import { isSupabaseConfigured } from '../lib/supabase'
@@ -19,6 +20,7 @@ const unavailableAuthRepository: AuthRepository = {
   getCurrentUser: () => null,
   signIn: async () => { throw new Error('Supabase doit être configuré pour la production.') },
   signUp: async () => { throw new Error('Supabase doit être configuré pour la production.') },
+  requestEmailChange: async () => { throw new Error('Le changement d’adresse email nécessite Supabase Auth.') },
   requestPasswordReset: async () => { throw new Error('Supabase doit être configuré pour la récupération du mot de passe.') },
   updatePassword: async () => { throw new Error('Supabase doit être configuré pour la modification du mot de passe.') },
   signOut: async () => undefined,
@@ -63,7 +65,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const session = await authRepository.getSession()
         if (!cancelled) setUser(hasPendingSession ? pendingSession : session.user)
       } catch (error) {
-        console.warn('Auth restore failed:', error)
+        // Seul un libellé technique non sensible est journalisé : ni l'objet
+        // d'erreur ni son message, qui peut contenir un jeton ou un identifiant.
+        console.warn(`Auth restore failed: ${safeAuthErrorLabel(error)}`)
         if (!cancelled) setUser(null)
       } finally {
         sessionInitialized = true
@@ -93,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) setProfile(currentProfile)
       })
       .catch((error) => {
-        console.warn('Profile restore failed:', error)
+        console.warn(`Profile restore failed: ${safeAuthErrorLabel(error)}`)
         if (!cancelled) setProfile(null)
       })
       .finally(() => {
@@ -119,6 +123,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await authRepository.requestPasswordReset(email)
   }, [])
 
+  const requestEmailChange = useCallback(async (email: string) => {
+    await authRepository.requestEmailChange(email)
+  }, [])
+
   const updatePassword = useCallback(async (password: string) => {
     await authRepository.updatePassword(password)
   }, [])
@@ -135,8 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, loading, mode: authMode, profile, profileLoading, signIn, signUp, requestPasswordReset, updatePassword, updateProfile, signOut }),
-    [user, loading, profile, profileLoading, signIn, signUp, requestPasswordReset, updatePassword, updateProfile, signOut],
+    () => ({ user, loading, mode: authMode, profile, profileLoading, signIn, signUp, requestEmailChange, requestPasswordReset, updatePassword, updateProfile, signOut }),
+    [user, loading, profile, profileLoading, signIn, signUp, requestEmailChange, requestPasswordReset, updatePassword, updateProfile, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
@@ -151,4 +159,3 @@ export function useAuth() {
 
   return context
 }
-

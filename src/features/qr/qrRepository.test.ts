@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { LocalQrRepository } from './LocalQrRepository'
+import { writeLocalSubscriptions } from './localSubscriptionStore'
 import { buildTagCode, isValidTagCode, normalizeTagCode } from './tagCode'
 import { DEMO_USER_IDS } from '../../lib/demoAuth'
 
@@ -271,5 +272,97 @@ describe('LocalQrRepository', () => {
       profileUrl: 'https://taggo.example/about',
     })
     expect(repo.getPublicProfile(created.id, 'user-2')).toBeNull()
+  })
+})
+
+/**
+ * ÉTAPE 12 — « Pas de période » n'est PAS « accès public autorisé ».
+ *
+ * Ces scénarios rejouent la règle de `get_public_taggo_state`, dans le même
+ * ordre de priorité, sur le dépôt local : c'est la seule façon de vérifier que
+ * le comportement observable hors Supabase reste aligné sur celui de la base.
+ */
+describe('état public d’un TAGGO selon sa période', () => {
+  const SEED = [
+    {
+      id: 'qr-none',
+      publicId: 'TGG-N7K4M2Q',
+      title: 'Sans période',
+      destinationUrl: 'https://exemple.test/sans',
+      status: 'active' as const,
+      lifecycleStatus: 'active' as const,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'qr-due',
+      publicId: 'TGG-8WKD5RT',
+      title: 'Période échue',
+      destinationUrl: 'https://exemple.test/du',
+      status: 'active' as const,
+      lifecycleStatus: 'active' as const,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'qr-live',
+      publicId: 'TGG-5XKM9P2',
+      title: 'Période valide',
+      destinationUrl: 'https://exemple.test/ok',
+      status: 'active' as const,
+      lifecycleStatus: 'active' as const,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'qr-pending',
+      publicId: 'TGG-6ZBN7QW',
+      title: 'Pas encore activé',
+      destinationUrl: 'https://exemple.test/pending',
+      status: 'draft' as const,
+      lifecycleStatus: 'activated' as const,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    },
+  ]
+
+  beforeEach(() => {
+    localStorage.clear()
+    localStorage.setItem('taggo-demo-qrs', JSON.stringify(SEED))
+    writeLocalSubscriptions({
+      'qr-due': {
+        status: 'expired',
+        startedAt: '2025-01-01T00:00:00.000Z',
+        endsAt: '2026-01-01T00:00:00.000Z',
+        autoRenew: false,
+      },
+      'qr-live': {
+        status: 'active',
+        startedAt: '2026-01-01T00:00:00.000Z',
+        endsAt: '2099-01-01T00:00:00.000Z',
+        autoRenew: false,
+      },
+    })
+  })
+
+  it('refuse l’accès public à un TAGGO sans abonnement', () => {
+    expect(new LocalQrRepository().getPublicTaggoState('TGG-N7K4M2Q')).toBe('subscription_required')
+  })
+
+  it('signale une période échue par `expired`, jamais par `subscription_required`', () => {
+    // Les deux états sont distincts et ne doivent jamais être confondus :
+    // `expired` = une période existe et elle est terminée.
+    expect(new LocalQrRepository().getPublicTaggoState('TGG-8WKD5RT')).toBe('expired')
+  })
+
+  it('autorise un TAGGO dont la période est active et non échue', () => {
+    expect(new LocalQrRepository().getPublicTaggoState('TGG-5XKM9P2')).toBe('active')
+  })
+
+  it('priorise `unactivated` sur `subscription_required`', () => {
+    // Le visiteur a une action à faire : ce n'est pas encore un problème
+    // d'abonnement, et le renvoyer vers «Activez votre TAGGO » est le bon conseil.
+    expect(new LocalQrRepository().getPublicTaggoState('TGG-6ZBN7QW')).toBe('unactivated')
+  })
+
+  it('ne déclare jamais `subscription_required` pour une période simplement échue', () => {
+    const states = SEED.map((qr) => new LocalQrRepository().getPublicTaggoState(qr.publicId))
+    expect(states.filter((state) => state === 'subscription_required')).toEqual(['subscription_required'])
   })
 })

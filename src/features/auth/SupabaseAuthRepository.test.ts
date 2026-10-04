@@ -41,6 +41,29 @@ describe('SupabaseAuthRepository', () => {
     expect(window.localStorage.length).toBe(0)
   })
 
+  it('never logs the password it forwards to Supabase Auth', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+    auth.signInWithPassword.mockResolvedValue({
+      data: { user: { id: 'user-1', email: 'user@example.com', user_metadata: {} } },
+      error: null,
+    })
+    auth.resetPasswordForEmail.mockResolvedValue({ error: null })
+    auth.updateUser.mockResolvedValue({ error: null })
+    const { SupabaseAuthRepository } = await import('./SupabaseAuthRepository')
+    const repository = new SupabaseAuthRepository()
+
+    await repository.signIn('user@example.com', 'StrongPass123!')
+    await repository.requestPasswordReset('user@example.com')
+    await repository.updatePassword('AnotherStrong123!')
+
+    const logged = [...warn.mock.calls, ...log.mock.calls].flat().join(' ')
+    expect(logged).not.toContain('StrongPass123!')
+    expect(logged).not.toContain('AnotherStrong123!')
+    warn.mockRestore()
+    log.mockRestore()
+  })
+
   it('creates a Supabase account and reports email confirmation when no session exists', async () => {
     auth.signUp.mockResolvedValue({
       data: { user: { id: 'user-2', email: 'new@example.com', user_metadata: { full_name: 'New User' } }, session: null },
@@ -74,6 +97,62 @@ describe('SupabaseAuthRepository', () => {
       expect.objectContaining({ redirectTo: expect.stringContaining('/reset-password') }),
     )
     expect(auth.updateUser).toHaveBeenCalledWith({ password: 'NewStrongPass123!' })
+  })
+
+  it('requests email changes through Supabase Auth with an internal confirmation redirect', async () => {
+    auth.updateUser.mockResolvedValue({ error: null })
+    const { SupabaseAuthRepository } = await import('./SupabaseAuthRepository')
+    const repository = new SupabaseAuthRepository()
+
+    await repository.requestEmailChange(' new@example.com ')
+
+    expect(auth.updateUser).toHaveBeenCalledWith(
+      { email: 'new@example.com' },
+      { emailRedirectTo: `${window.location.origin}/settings` },
+    )
+  })
+
+  it('never sends the password to the reset request and keeps storage empty', async () => {
+    auth.resetPasswordForEmail.mockResolvedValue({ error: null })
+    const { SupabaseAuthRepository } = await import('./SupabaseAuthRepository')
+    const repository = new SupabaseAuthRepository()
+
+    await repository.requestPasswordReset('user@example.com')
+
+    // Le repository ne reçoit et ne transmet que l'adresse : aucun mot de
+    // passe, aucun token n'est fabriqué par TAGGO.
+    const [email, options] = auth.resetPasswordForEmail.mock.calls[0]
+    expect(email).toBe('user@example.com')
+    expect(Object.keys(options)).toEqual(['redirectTo'])
+    expect(typeof options.redirectTo).toBe('string')
+    expect(window.localStorage.length).toBe(0)
+  })
+
+  it('propagates Supabase reset errors without leaking a generic success path', async () => {
+    auth.resetPasswordForEmail.mockResolvedValue({ error: new Error('rate limited') })
+    const { SupabaseAuthRepository } = await import('./SupabaseAuthRepository')
+    const repository = new SupabaseAuthRepository()
+
+    await expect(repository.requestPasswordReset('user@example.com')).rejects.toThrow('rate limited')
+  })
+
+  it('always redirects the reset link to an allow-listed internal path', async () => {
+    auth.resetPasswordForEmail.mockResolvedValue({ error: null })
+    auth.signUp.mockResolvedValue({
+      data: { user: { id: 'user-9', email: 'a@example.com', user_metadata: {} }, session: { user: {} } },
+      error: null,
+    })
+    const { SupabaseAuthRepository } = await import('./SupabaseAuthRepository')
+    const repository = new SupabaseAuthRepository()
+
+    await repository.requestPasswordReset('user@example.com')
+    await repository.signUp({ email: 'a@example.com', password: 'StrongPass123!', fullName: 'A' })
+
+    const resetOptions = auth.resetPasswordForEmail.mock.calls[0][1]
+    const signupOptions = auth.signUp.mock.calls[0][0].options
+
+    expect(resetOptions.redirectTo).toBe(`${window.location.origin}/reset-password`)
+    expect(signupOptions.emailRedirectTo).toBe(`${window.location.origin}/login`)
   })
 
   it('restores a session and forwards auth state changes', async () => {

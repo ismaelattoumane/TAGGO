@@ -12,7 +12,20 @@ import { SettingsPage } from '../pages/SettingsPage'
 import { TagRedirectPage } from '../pages/TagRedirectPage'
 import { ActivateTaggoPage } from '../pages/ActivateTaggoPage'
 import { LandingPage } from '../features/landing/LandingPage'
-import { PublicInfoPage } from '../pages/PublicInfoPage'
+import { AboutPage } from '../pages/AboutPage'
+import { ContactPage } from '../pages/ContactPage'
+import { FaqPage } from '../pages/FaqPage'
+import { LegalCookiesPage } from '../pages/LegalCookiesPage'
+import { LegalNoticePage } from '../pages/LegalNoticePage'
+import { LegalPrivacyPage } from '../pages/LegalPrivacyPage'
+import { LegalTermsPage } from '../pages/LegalTermsPage'
+import { ShippingPage } from '../pages/ShippingPage'
+import { CartPage } from '../pages/CartPage'
+import { CheckoutPage } from '../pages/CheckoutPage'
+import { CheckoutCancelPage } from '../pages/CheckoutCancelPage'
+import { CheckoutSuccessPage } from '../pages/CheckoutSuccessPage'
+import { ProductPage } from '../pages/ProductPage'
+import { ShopPage } from '../pages/ShopPage'
 import { PasswordResetPage } from '../pages/PasswordResetPage'
 import { PasswordUpdatePage } from '../pages/PasswordUpdatePage'
 import { useAuth } from '../context/AuthContext'
@@ -34,10 +47,22 @@ const router = createBrowserRouter([
       { path: 'register', element: <GuestRoute><RegisterPage /></GuestRoute> },
       { path: 'forgot-password', element: <PasswordResetPage /> },
       { path: 'reset-password', element: <PasswordUpdatePage /> },
-      { path: 'legal/terms', element: <PublicInfoPage page="terms" /> },
-      { path: 'legal/privacy', element: <PublicInfoPage page="privacy" /> },
-      { path: 'legal/notice', element: <PublicInfoPage page="notice" /> },
-      { path: 'contact', element: <PublicInfoPage page="contact" /> },
+      { path: 'legal/terms', element: <LegalTermsPage /> },
+      { path: 'legal/privacy', element: <LegalPrivacyPage /> },
+      { path: 'legal/notice', element: <LegalNoticePage /> },
+      { path: 'legal/cookies', element: <LegalCookiesPage /> },
+      { path: 'shipping', element: <ShippingPage /> },
+      { path: 'about', element: <AboutPage /> },
+      { path: 'faq', element: <FaqPage /> },
+      { path: 'contact', element: <ContactPage /> },
+      // Public TAGGO shop (step 8).
+      { path: 'shop', element: <ShopPage /> },
+      { path: 'shop/:slug', element: <ProductPage /> },
+      { path: 'cart', element: <CartPage /> },
+      { path: 'checkout', element: <CheckoutPage /> },
+      // Retour de Stripe Checkout (étape 9) : lecture seule, aucun effet de bord.
+      { path: 'checkout/success', element: <CheckoutSuccessPage /> },
+      { path: 'checkout/cancel', element: <CheckoutCancelPage /> },
       {
         path: 'dashboard',
         element: (

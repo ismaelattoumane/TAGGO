@@ -57,6 +57,10 @@ export class LocalAuthRepository implements AuthRepository {
     return user
   }
 
+  async requestEmailChange(): Promise<void> {
+    throw new Error('Le changement d’adresse email nécessite Supabase Auth.')
+  }
+
   async requestPasswordReset(): Promise<void> {
     throw new Error('La récupération du mot de passe nécessite Supabase Auth.')
   }
@@ -78,4 +82,3 @@ export class LocalAuthRepository implements AuthRepository {
     }
   }
 }
-

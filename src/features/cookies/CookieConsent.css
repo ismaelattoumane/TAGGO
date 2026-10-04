@@ -1,0 +1,117 @@
+/* ---------- TAGGO — Bandeau et panneau de consentement cookies (étape 10) ---------- */
+
+.taggo-cookie__banner {
+  position: fixed;
+  inset: auto 1rem 1rem;
+  z-index: var(--z-modal);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.taggo-cookie__panel {
+  pointer-events: auto;
+  width: min(100%, 42rem);
+  padding: var(--space-5);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-popover);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.taggo-cookie__banner .taggo-cookie__panel {
+  position: static;
+}
+
+.taggo-cookie__title {
+  margin: 0;
+  font-size: var(--text-h3);
+}
+
+.taggo-cookie__text,
+.taggo-cookie__description,
+.taggo-cookie__required,
+.taggo-cookie__legal {
+  margin: 0;
+  font-size: var(--text-body-sm);
+  color: var(--color-text-muted);
+  line-height: var(--leading-normal);
+}
+
+.taggo-cookie__legal a {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.taggo-cookie__categories {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.taggo-cookie__category {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.taggo-cookie__label {
+  font-weight: 700;
+  font-size: var(--text-body-sm);
+}
+
+.taggo-cookie__checkbox {
+  justify-self: start;
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--color-primary);
+}
+
+.taggo-cookie__checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.taggo-cookie__checkbox:focus-visible,
+.taggo-cookie__link-button:focus-visible,
+.taggo-cookie__panel button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.taggo-cookie__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.taggo-cookie__footer-action {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3) 0;
+}
+
+.taggo-cookie__link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taggo-cookie__banner {
+    transition: none;
+  }
+}

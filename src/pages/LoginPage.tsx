@@ -2,7 +2,9 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { signInErrorMessage } from '../features/auth/authErrors'
 import { getSafeAuthDestination } from '../lib/runtime'
+import { usePageSeo } from '../lib/usePageSeo'
 import { isValidEmail, isValidPassword } from '../lib/validators'
 
 const DEMO_ACCOUNTS = [
@@ -19,6 +21,7 @@ const DEMO_ACCOUNTS = [
 ]
 
 export function LoginPage() {
+  usePageSeo({ title: 'Connexion — TAGGO', description: 'Accédez à votre espace TAGGO pour gérer vos vêtements connectés.', noindex: true })
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -42,7 +45,7 @@ export function LoginPage() {
       await signIn(email, password)
       navigate(destination)
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : 'Erreur de connexion.')
+      setError(signInErrorMessage(authError))
     } finally {
       setLoading(false)
     }
@@ -55,7 +58,7 @@ export function LoginPage() {
       await signIn(demoEmail, demoPassword)
       navigate(destination)
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : 'Erreur de connexion.')
+      setError(signInErrorMessage(authError))
     } finally {
       setLoading(false)
     }

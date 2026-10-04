@@ -4,8 +4,10 @@ import { useAuth } from '../context/AuthContext'
 import { goBackSafely } from '../lib/navigation'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
 import { qrRepository } from '../features/qr/repository'
+import { usePageSeo } from '../lib/usePageSeo'
 
 export function CreateQrPage() {
+  usePageSeo({ title: 'Créer un QR code — TAGGO', description: 'Créez un QR code TAGGO depuis votre espace personnel.', noindex: true })
   const navigate = useNavigate()
   const { user } = useAuth()
   const [title, setTitle] = useState('')

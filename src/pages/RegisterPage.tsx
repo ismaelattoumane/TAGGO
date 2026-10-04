@@ -2,10 +2,13 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { signUpErrorMessage } from '../features/auth/authErrors'
 import { getSafeAuthDestination } from '../lib/runtime'
+import { usePageSeo } from '../lib/usePageSeo'
 import { isValidEmail, isValidPassword, sanitizeText } from '../lib/validators'
 
 export function RegisterPage() {
+  usePageSeo({ title: 'Créer un compte — TAGGO', description: 'Créez votre compte TAGGO pour gérer vos vêtements connectés et vos QR codes.', noindex: true })
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -32,7 +35,7 @@ export function RegisterPage() {
       await signUp(email, password, cleanedFullName)
       navigate(destination)
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : 'Erreur d’inscription.')
+      setError(signUpErrorMessage(authError))
     } finally {
       setLoading(false)
     }

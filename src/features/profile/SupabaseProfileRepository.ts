@@ -69,7 +69,6 @@ export class SupabaseProfileRepository implements ProfileRepository {
       .from('profiles')
       .upsert({
         id: authData.user.id,
-        email: authData.user.email ?? '',
         first_name: input.firstName,
         last_name: input.lastName,
         display_name: input.displayName,
