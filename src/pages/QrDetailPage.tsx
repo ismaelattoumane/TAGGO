@@ -4,10 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import { goBackSafely } from '../lib/navigation'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
 import { qrRepository } from '../features/qr/repository'
+import { TaggoAnalyticsPanel } from '../features/analytics/TaggoAnalyticsPanel'
+import { TaggoSubscriptionPanel } from '../features/subscriptions/TaggoSubscriptionPanel'
 import { CopyButton } from '../components/CopyButton'
 import { buildPublicTaggoUrl } from '../lib/publicUrl'
 import { generateQrPng, generateQrSvg } from '../features/qr/qrCode'
 import type { PublicProfileInput } from '../features/qr/publicProfile'
+import { usePageSeo } from '../lib/usePageSeo'
 
 function downloadFile(content: string, fileName: string, type: string) {
   const blob = new Blob([content], { type })
@@ -27,6 +30,7 @@ function downloadPng(dataUrl: string, fileName: string) {
 }
 
 export function QrDetailPage() {
+  usePageSeo({ title: 'Mon QR code — TAGGO', description: 'Modifiez la destination de votre QR code TAGGO.', noindex: true })
   const { qrId } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -194,6 +198,10 @@ export function QrDetailPage() {
             </a>
           </div>
         </section>
+
+        {qrId ? <TaggoSubscriptionPanel qrId={qrId} publicId={publicId} /> : null}
+
+        {qrId ? <TaggoAnalyticsPanel qrId={qrId} publicId={publicId} /> : null}
 
         <div className="auth-form detail-form">
           <label htmlFor="qr-title">

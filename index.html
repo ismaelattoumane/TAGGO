@@ -9,7 +9,14 @@
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="TAGGO aide les marques à connecter leurs collections via des QR codes publics simples et sécurisés." />
-    <meta name="robots" content="noindex, nofollow" />
+    <!--
+      Default SPA policy: crawlable. Private routes are blocked at crawl time
+      in public/robots.txt (/dashboard, /login, /register, /cart, /checkout)
+      and additionally marked `noindex, nofollow` client-side by usePageSeo.
+      A global `noindex` here would hide the public pages (/, /shop, /shop/:slug,
+      /t/:tag) from crawlers BEFORE the JavaScript that sets their metadata runs.
+    -->
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#0b1320" />
     <title>TAGGO — QR codes de marque</title>
   </head>

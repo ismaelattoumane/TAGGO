@@ -1,0 +1,20 @@
+✉️ Confirme ton adresse email TAGGO
+
+Salut {{ .Email }},
+
+Bienvenue chez TAGGO.
+
+Pour terminer la création de ton compte, confirme ton adresse email :
+
+{{ .ConfirmationURL }}
+
+Une fois ton adresse confirmée, tu pourras accéder à ton compte TAGGO.
+
+Si tu n’es pas à l’origine de cette inscription, tu peux ignorer cet email : aucun compte ne sera créé.
+
+À très vite,
+L’équipe TAGGO
+Le vêtement qui connecte.
+
+TAGGO — support-taggo@protonmail.com
+Tu reçois cet email parce que tu as créé un compte TAGGO avec cette adresse.

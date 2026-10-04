@@ -12,7 +12,31 @@ export type TaggoLifecycleStatus =
   | 'replaced'
   | 'cancelled'
 
-export type PublicTaggoState = 'not_found' | 'unactivated' | 'active' | 'unavailable'
+/**
+ * État public d'un TAGGO.
+ *
+ * Les états d'abonnement sont DISTINCTS des états de configuration, parce que
+ * les situations ne se déduisent pas l'une de l'autre :
+ *
+ *   `expired`               la période EXISTE et elle est terminée. Situation
+ *                           temporaire et réversible par un renouvellement.
+ *   `subscription_required` AUCUNE période n'existe pour ce TAGGO. Ce n'est pas
+ *                           une expiration : le propriétaire n'a jamais eu de
+ *                           période gérée. Les deux doivent rester distincts,
+ *                           sinon le propriétaire reçoit un diagnostic faux et
+ *                           le visiteur un message qui ne correspond pas à sa
+ *                           situation.
+ *
+ * `unavailable` reste réservé au TAGGO suspendu, remplacé ou non actif : il ne
+ * dit rien de l'abonnement.
+ */
+export type PublicTaggoState =
+  | 'not_found'
+  | 'unactivated'
+  | 'active'
+  | 'expired'
+  | 'subscription_required'
+  | 'unavailable'
 
 /**
  * Canonical TAGGO QR record.

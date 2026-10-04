@@ -1,0 +1,17 @@
+✉️ Confirme ta nouvelle adresse email TAGGO
+
+Salut,
+
+Une demande de changement d’adresse email a été effectuée pour ton compte TAGGO. La nouvelle adresse demandée est {{ .NewEmail }}.
+
+Pour confirmer cette adresse :
+
+{{ .ConfirmationURL }}
+
+Si tu n’es pas à l’origine de cette demande, tu peux ignorer cet email : ton adresse actuelle restera inchangée.
+
+L’équipe TAGGO
+Le vêtement qui connecte.
+
+TAGGO — support-taggo@protonmail.com
+Tu reçois cet email parce qu’un changement d’adresse a été demandé sur ton compte TAGGO.

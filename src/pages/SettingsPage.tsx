@@ -2,16 +2,19 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { goBackSafely } from '../lib/navigation'
-import { sanitizeText } from '../lib/validators'
+import { isValidEmail, sanitizeText } from '../lib/validators'
+import { usePageSeo } from '../lib/usePageSeo'
 
 export function SettingsPage() {
-  const { profile, profileLoading, updateProfile, user, signOut } = useAuth()
+  usePageSeo({ title: 'Paramètres du compte — TAGGO', description: 'Paramètres de votre compte TAGGO.', noindex: true })
+  const { profile, profileLoading, updateProfile, requestEmailChange, mode, user, signOut } = useAuth()
   const navigate = useNavigate()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
 
   useEffect(() => {
     if (!profile) return
@@ -47,6 +50,26 @@ export function SettingsPage() {
       setMessage('Profil enregistré.')
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Impossible d’enregistrer le profil.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleRequestEmailChange = async () => {
+    const email = newEmail.trim()
+    if (!isValidEmail(email)) {
+      setMessage('Veuillez saisir une adresse email valide.')
+      return
+    }
+
+    try {
+      setSaving(true)
+      setMessage('')
+      await requestEmailChange(email)
+      setNewEmail('')
+      setMessage('Demande envoyée. Confirmez le changement avec les emails transmis par Supabase Auth.')
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Impossible de demander le changement d’adresse email.')
     } finally {
       setSaving(false)
     }
@@ -102,6 +125,25 @@ export function SettingsPage() {
 
           <section style={{ border: '1px solid rgba(43,45,66,0.12)', borderRadius: '18px', padding: '1.25rem' }}>
             <h2 style={{ marginBottom: '1rem' }}>Sécurité</h2>
+            <p style={{ marginBottom: '1rem', color: '#6d597a' }}>Les changements d’adresse email sont confirmés par Supabase Auth avant leur prise en compte.</p>
+            {mode === 'supabase' ? (
+              <div className="auth-form" style={{ marginBottom: '1rem' }}>
+                <label htmlFor="account-new-email">
+                  Nouvelle adresse email
+                  <input
+                    id="account-new-email"
+                    type="email"
+                    autoComplete="email"
+                    value={newEmail}
+                    onChange={(event) => setNewEmail(event.target.value)}
+                    disabled={saving}
+                  />
+                </label>
+                <button type="button" className="ghost-button" onClick={() => void handleRequestEmailChange()} disabled={saving}>
+                  {saving ? 'Envoi...' : 'Demander le changement'}
+                </button>
+              </div>
+            ) : null}
             <p style={{ marginBottom: '1rem', color: '#6d597a' }}>Le changement de mot de passe est géré par Supabase lorsque le flux est activé côté back-office.</p>
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <button type="button" className="ghost-button" onClick={handleSignOut}>Déconnexion</button>
@@ -110,7 +152,17 @@ export function SettingsPage() {
 
           <section style={{ border: '1px solid rgba(43,45,66,0.12)', borderRadius: '18px', padding: '1.25rem' }}>
             <h2 style={{ marginBottom: '1rem' }}>Abonnement</h2>
-            <p style={{ color: '#6d597a' }}>Aucune information d’abonnement n’est disponible pour le moment.</p>
+            <p style={{ color: '#6d597a' }}>
+              L’abonnement(TAGGO est rattaché à chaque TAGGO, pas au compte : la
+              première année est incluse avec l’achat, puis un renouvellement annuel
+              est nécessaire. Le statut, les dates et le renouvellement automatique de
+              chaque TAGGO sont affichés sur la page de ce TAGGO, dans votre tableau de
+              bord.
+            </p>
+            <p style={{ color: '#6d597a', marginTop: '0.75rem' }}>
+              Le tarif de renouvellement n’est pas encore défini : aucun renouvellement
+              ne peut être effectué pour le moment.
+            </p>
           </section>
         </div>
       </section>

@@ -78,7 +78,9 @@ TAGGO/
 | `src/lib/demoData.ts` | QR storage & CRUD |
 | `src/lib/demoAuth.ts` | Local auth when Supabase unavailable |
 | `src/pages/DashboardPage.tsx` | Main dashboard |
-| `supabase/schema.sql` | Database schema (for production) |
+| `supabase/migrations/` | Database schema — source of truth (apply in order) |
+| `supabase/schema.sql` | Generated snapshot of the schema, for a **new** Supabase project |
+| `supabase/tests/` | PostgreSQL / RLS tests (`npm run test:db`) |
 
 ---
 
@@ -170,7 +172,8 @@ When ready to use with real backend:
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
-# 4. Run database setup in Supabase (use supabase/schema.sql)
+# 4. Database setup: apply supabase/migrations in order (a brand-new project can
+#    also be provisioned from supabase/schema.sql, which is a generated snapshot)
 # 5. Restart app
 
 npm run dev

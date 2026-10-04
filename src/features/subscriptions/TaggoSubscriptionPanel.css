@@ -1,0 +1,81 @@
+/* ÉTAPE 12 — Panneau d'abonnement TAGGO.
+ *
+ * Palette et espacement issus des variables déjà présentes dans index.css :
+ * aucune couleur, aucune police et aucun espacement ne sont introduits ici.
+ */
+
+.taggo-subscription {
+  margin-bottom: 24px;
+}
+
+.taggo-subscription__facts {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.taggo-subscription__facts > div {
+  padding: 10px 12px;
+  background: var(--panel, #fffaf8);
+  border: 1px solid var(--border, #d6a7b2);
+  border-radius: 12px;
+}
+
+.taggo-subscription__facts dt {
+  font-size: 12px;
+  color: var(--muted, #6d597a);
+}
+
+.taggo-subscription__facts dd {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
+
+/* Le statut n'est jamais porté par la couleur seule : le texte porte déjà
+   l'information (« Actif », « Expiré »…), la couleur ne fait que l'appoint. */
+.taggo-subscription__facts dd[data-subscription-display='active'] {
+  color: var(--brand, #6f2da8);
+}
+
+.taggo-subscription__facts dd[data-subscription-display='expired'] {
+  color: var(--danger, #a4243b);
+}
+
+.taggo-subscription__facts dd[data-subscription-display='suspended'],
+.taggo-subscription__facts dd[data-subscription-display='replaced'] {
+  color: var(--muted, #6d597a);
+}
+
+.taggo-subscription__note {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--muted, #6d597a);
+}
+
+.taggo-subscription__note--warning {
+  padding: 12px;
+  border-left: 3px solid var(--danger, #a4243b);
+  background: var(--panel, #fffaf8);
+}
+
+.taggo-subscription__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.taggo-subscription__auto-renew {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.taggo-subscription__auto-renew input {
+  width: 18px;
+  height: 18px;
+}

@@ -9,6 +9,13 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint .",
     "test": "vitest run",
+    "test:db": "bash scripts/db-test.sh",
+    "db:stack:up": "bash scripts/supabase-stack.sh up",
+    "db:stack:down": "bash scripts/supabase-stack.sh down",
+    "db:replay": "bash scripts/db-replay.sh",
+    "db:schema": "bash scripts/db-schema.sh dump",
+    "db:schema:check": "bash scripts/db-schema.sh check",
+    "db:schema:replay": "bash scripts/db-schema.sh replay",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -21,6 +28,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3",
+    "stripe": "^18.5.0",
     "three": "^0.186.0"
   },
   "devDependencies": {

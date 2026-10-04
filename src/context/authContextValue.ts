@@ -10,6 +10,7 @@ export type AuthContextValue = {
   profileLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, fullName: string) => Promise<void>
+  requestEmailChange: (email: string) => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
   updatePassword: (password: string) => Promise<void>
   updateProfile: (input: UpdateTaggoProfileInput) => Promise<void>

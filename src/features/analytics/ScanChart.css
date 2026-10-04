@@ -1,0 +1,124 @@
+/* ÉTAPE 11 — Graphique d'évolution des scans.
+ *
+ * Palette strictement identique au reste du projet (variables defined in
+ * index.css). Aucune couleur n'est introduite ici, aucune dépendance externe,
+ * et l'information n'est jamais portée par la couleur seule : le tableau de
+ * valeurs est toujours disponible sous le graphique.
+ */
+
+.taggo-scan-chart {
+  margin: 0;
+}
+
+.taggo-scan-chart__empty {
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--muted, #6d597a);
+  background: var(--panel, #fffaf8);
+  border: 1px dashed var(--border, #d6a7b2);
+  border-radius: 12px;
+}
+
+.taggo-scan-chart__svg {
+  display: block;
+  width: 100%;
+  /* Hauteur fixe pour rester lisible sur desktop, mais le SVG se met à
+     l'échelle horizontalement sur mobile (viewBox + width: 100%). */
+  height: 200px;
+  overflow: visible;
+}
+
+.taggo-scan-chart__baseline {
+  stroke: var(--border, #d6a7b2);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.taggo-scan-chart__line {
+  stroke: var(--brand, #6f2da8);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.taggo-scan-chart__bar {
+  fill: var(--brand, #6f2da8);
+}
+
+.taggo-scan-chart__tick {
+  fill: var(--muted, #6d597a);
+  font-size: 10px;
+  font-family: inherit;
+}
+
+.taggo-scan-chart__table {
+  margin-top: 12px;
+}
+
+.taggo-scan-chart__summary {
+  font-size: 13px;
+  color: var(--muted, #6d597a);
+}
+
+.taggo-scan-chart__table summary {
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--brand, #6f2da8);
+}
+
+.taggo-scan-chart__table table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.taggo-scan-chart__caption {
+  text-align: left;
+  padding-bottom: 4px;
+  color: var(--muted, #6d597a);
+}
+
+.taggo-scan-chart__table th,
+.taggo-scan-chart__table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border, #d6a7b2);
+  text-align: left;
+}
+
+@media (max-width: 720px) {
+  .taggo-scan-chart__svg {
+    height: 160px;
+  }
+}
+
+/* Panneau d'analytics dans le dashboard : réutilise les cartes et grilles
+   existantes, sans introduire de nouvelle identité visuelle. */
+
+.taggo-analytics {
+  margin-bottom: 24px;
+}
+
+.taggo-analytics h3 {
+  margin: 24px 0 8px;
+  font-size: 16px;
+}
+
+.taggo-analytics__recent {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--muted, #6d597a);
+}
+
+.taggo-analytics__recent li + li {
+  margin-top: 4px;
+}
+
+.taggo-analytics__note {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, #d6a7b2);
+  font-size: 13px;
+  color: var(--muted, #6d597a);
+}

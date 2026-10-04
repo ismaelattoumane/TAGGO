@@ -1,6 +1,15 @@
 import { Link } from 'react-router-dom'
+import { usePageSeo } from '../lib/usePageSeo'
 
 export function NotFoundPage() {
+  // Unknown URLs are rewritten to index.html by the SPA host (HTTP 200), so
+  // this page must never be indexed: otherwise soft-404s flood the index.
+  usePageSeo({
+    title: 'Page non trouvée — TAGGO',
+    description: 'La page demandée n’existe pas ou a été supprimée.',
+    noindex: true,
+  })
+
   return (
     <main className="auth-shell">
       <section className="auth-panel" style={{ textAlign: 'center' }}>

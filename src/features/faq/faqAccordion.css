@@ -1,0 +1,94 @@
+/* ---------- TAGGO — Accordéon FAQ partagé (landing + page /faq) ----------
+   Ces règles vivaient auparavant dans FaqSection.css. Elles sont extraites ici
+   pour que la page /faq dispose exactement du même rendu que la landing, sans
+   dépendre de l'import CSS de la section landing. */
+
+.taggo-faq-accordion,
+.taggo-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.taggo-faq-item {
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.taggo-faq-item--open {
+  border-color: var(--color-primary);
+}
+
+.taggo-faq-item__question {
+  margin: 0;
+}
+
+.taggo-faq-item__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.1rem 1.25rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.taggo-faq-item__button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
+}
+
+.taggo-faq-item__text {
+  font-weight: 700;
+  font-size: var(--text-body);
+  color: var(--color-text);
+}
+
+.taggo-faq-item__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-full);
+  background: rgba(111, 45, 168, 0.08);
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast);
+}
+
+.taggo-faq-item--open .taggo-faq-item__icon {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.taggo-faq-item__panel {
+  padding: 0 1.25rem 1.1rem;
+}
+
+.taggo-faq-item__answer {
+  font-size: var(--text-body-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-muted);
+  margin: 0 0 var(--space-2);
+}
+
+.taggo-faq-item__panel p:last-child {
+  margin-bottom: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taggo-faq-item,
+  .taggo-faq-item__icon {
+    transition: none;
+  }
+}

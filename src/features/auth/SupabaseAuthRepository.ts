@@ -1,3 +1,4 @@
+import { EmailConfirmationRequiredError } from './authErrors'
 import { buildAuthRedirectUrl } from '../../lib/runtime'
 import { supabase } from '../../lib/supabase'
 import type { AuthRepository } from './AuthRepository'
@@ -46,11 +47,28 @@ export class SupabaseAuthRepository implements AuthRepository {
     })
     if (error || !data.user) throw error ?? new Error('Inscription impossible.')
     if (!data.session) {
-      throw new Error('Compte créé. Confirmez votre adresse email avant de vous connecter.')
+      // Supabase a créé le compte mais exige la confirmation de l'adresse :
+      // l'email part de son côté. Ce n'est pas un échec d'inscription.
+      throw new EmailConfirmationRequiredError()
     }
     return toUser(data.user)
   }
 
+  async requestEmailChange(email: string): Promise<void> {
+    const { error } = await requireClient().auth.updateUser(
+      { email: email.trim() },
+      { emailRedirectTo: buildAuthRedirectUrl('/settings') },
+    )
+    if (error) throw error
+  }
+
+  /**
+   * Demande l'email de réinitialisation à Supabase Auth.
+   *
+   * Aucun token n'est créé, stocké ni journalisé par TAGGO : la redirection
+   * est reconstruite depuis l'origine courante et validée par la liste blanche
+   * `AUTH_REDIRECT_PATHS`.
+   */
   async requestPasswordReset(email: string): Promise<void> {
     const { error } = await requireClient().auth.resetPasswordForEmail(email, {
       redirectTo: buildAuthRedirectUrl('/reset-password'),
@@ -58,6 +76,12 @@ export class SupabaseAuthRepository implements AuthRepository {
     if (error) throw error
   }
 
+  /**
+   * Applique le nouveau mot de passe via `updateUser()`.
+   *
+   * Appelé uniquement depuis `/reset-password`, où la session de récupération
+   * Supabase est déjà établie. Le mot de passe n'est ni journalisé ni stocké.
+   */
   async updatePassword(password: string): Promise<void> {
     const { error } = await requireClient().auth.updateUser({ password })
     if (error) throw error

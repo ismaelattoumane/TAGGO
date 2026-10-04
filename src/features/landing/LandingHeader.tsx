@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import './LandingHeader.css'
 
-const NAV_LINKS = [
+export type HeaderLink = {
+  label: string
+  /** `#anchor` renders an in-page link, anything else a router link. */
+  href: string
+}
+
+const NAV_LINKS: HeaderLink[] = [
   { label: 'Concept', href: '#concept' },
   { label: 'Comment ça marche', href: '#how-it-works' },
   { label: 'Personnalisation', href: '#customization' },
@@ -10,11 +16,65 @@ const NAV_LINKS = [
   { label: 'FAQ', href: '#faq' },
 ]
 
+const DEFAULT_CTA: HeaderLink = { label: 'Créer mon TAGGO', href: '/register' }
+
+type LandingHeaderProps = {
+  links?: HeaderLink[]
+  cta?: HeaderLink
+  /** Optional cart badge (shop pages). */
+  cartCount?: number
+}
+
+function isAnchorLink(href: string): boolean {
+  return href.startsWith('#')
+}
+
+function HeaderNavItem({
+  link,
+  className,
+  onClick,
+  badge,
+}: {
+  link: HeaderLink
+  className: string
+  onClick?: () => void
+  badge?: number
+}) {
+  const content = (
+    <>
+      {link.label}
+      {badge !== undefined && badge > 0 ? (
+        <>
+          <span className="taggo-landing-header__badge" aria-hidden="true">
+            {badge}
+          </span>
+          <span className="visually-hidden">
+            , {badge} {badge > 1 ? 'articles' : 'article'} au panier
+          </span>
+        </>
+      ) : null}
+    </>
+  )
+
+  return isAnchorLink(link.href) ? (
+    <a href={link.href} className={className} onClick={onClick}>
+      {content}
+    </a>
+  ) : (
+    <Link to={link.href} className={className} onClick={onClick}>
+      {content}
+    </Link>
+  )
+}
+
 /**
  * TAGGO Landing Header — sticky, minimal, premium.
  * Collapses to a hamburger menu on mobile.
+ *
+ * The shop reuses this component with its own links/CTA so both surfaces share
+ * exactly the same navigation and visual identity.
  */
-export function LandingHeader() {
+export function LandingHeader({ links = NAV_LINKS, cta = DEFAULT_CTA, cartCount }: LandingHeaderProps) {
   const [open, setOpen] = useState(false)
 
   // Close mobile menu on resize to desktop
@@ -59,23 +119,22 @@ export function LandingHeader() {
           className="taggo-landing-header__nav"
           aria-label="Navigation principale"
         >
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
+          {links.map((link) => (
+            <HeaderNavItem
+              key={link.href + link.label}
+              link={link}
               className="taggo-landing-header__nav-link"
-            >
-              {link.label}
-            </a>
+              badge={link.href === '/cart' ? cartCount : undefined}
+            />
           ))}
         </nav>
 
         <div className="taggo-landing-header__actions">
           <Link
-            to="/register"
+            to={cta.href}
             className="taggo-button taggo-button--primary taggo-landing-header__cta"
           >
-            Créer mon TAGGO
+            {cta.label}
           </Link>
         </div>
 
@@ -100,22 +159,21 @@ export function LandingHeader() {
         aria-hidden={!open}
       >
         <nav aria-label="Navigation mobile">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
+          {links.map((link) => (
+            <HeaderNavItem
+              key={link.href + link.label}
+              link={link}
               className="taggo-landing-header__mobile-link"
               onClick={closeMenu}
-            >
-              {link.label}
-            </a>
+              badge={link.href === '/cart' ? cartCount : undefined}
+            />
           ))}
           <Link
-            to="/register"
+            to={cta.href}
             className="taggo-button taggo-button--primary taggo-landing-header__mobile-cta"
             onClick={closeMenu}
           >
-            Créer mon TAGGO
+            {cta.label}
           </Link>
         </nav>
       </div>

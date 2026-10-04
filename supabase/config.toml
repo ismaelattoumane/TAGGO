@@ -15,3 +15,59 @@ port = 54323
 enabled = true
 site_url = "http://127.0.0.1:5173"
 additional_redirect_urls = ["http://localhost:5173"]
+
+# La longueur minimale doit rester alignée avec `isValidPassword`
+# (src/lib/validators.ts), sinon le frontend annoncerait une règle que
+# Supabase n'applique pas. Les autres exigences (majuscule + chiffre) sont
+# vérifiées côté client uniquement : Supabase ne les impose pas.
+minimum_password_length = 8
+
+[auth.email]
+# TAGGO utilise l'email + mot de passe. Aucune inscription OAuth, aucun
+# Magic Link : `signInWithOtp` n'est appelé nulle part dans le code.
+enable_signup = true
+# Le dépôt suppose que la confirmation d'email est ACTIVE : le message
+# « Confirmez votre adresse email » n'apparaît que si aucune session n'est
+# retournée par signUp (SupabaseAuthRepository.ts).
+# [À VÉRIFIER DANS SUPABASE DASHBOARD — Authentication > Sign In / Providers]
+enable_confirmations = true
+# Un changement d'adresse doit être confirmé sur la nouvelle adresse, et
+# aussi sur l'ancienne : aucune confirmation n'est contournée côté client.
+double_confirm_changes = true
+# Pas de reauthentification exigée pour changer un mot de passe : le flux
+# `/reset-password` repose sur la session de récupération Supabase.
+secure_password_change = false
+# Anti-abus : espacement minimal entre deux emails d'authentification.
+max_frequency = "1m0s"
+otp_length = 6
+# Durée de vie des liens de confirmation / réinitialisation, en secondes.
+# ⚠️ Cette valeur ne concerne QUE l'instance locale. La durée de vie réelle
+# en production est celle configurée dans Supabase Dashboard (Authentication
+# > Email > OTP expiry) : ne pas annoncer une durée dans les templates sans
+# l'avoir vérifiée là-bas.
+otp_expiry = 3600
+
+# ── Templates d'emails Auth (étape 10.1) ──────────────────────────────────
+# Ces fichiers servent au `supabase start` local. Pour le projet hébergé, le
+# même contenu doit être copié dans Dashboard > Authentication > Email
+# Templates. Voir docs/supabase-auth-emails.md.
+[auth.email.template.confirmation]
+subject = "✉️ Confirme ton adresse email TAGGO"
+content_path = "./supabase/templates/auth/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "🔑 Réinitialise ton mot de passe TAGGO"
+content_path = "./supabase/templates/auth/recovery.html"
+
+[auth.email.template.email_change]
+subject = "✉️ Confirme ta nouvelle adresse email TAGGO"
+content_path = "./supabase/templates/auth/email_change.html"
+
+# Magic Link : NON UTILISÉ par TAGGO. Aucun template n'est fourni et
+# `signInWithOtp` n'est jamais appelé : le template par défaut de Supabase
+# ne part donc jamais.
+#
+# Aucun SMTP n'est configuré ici : aucun secret ne doit être versionné.
+# `supabase start` intercepte les emails dans Mailpit (http://127.0.0.1:54324).
+# Le SMTP de production se configure dans Supabase Dashboard > Authentication
+# > Email > SMTP.
