@@ -26,3 +26,5 @@ Allow: /shipping
 Allow: /legal/
 Allow: /t/
 Allow: /qr/
+
+Sitemap: https://taggo.space/sitemap.xml
