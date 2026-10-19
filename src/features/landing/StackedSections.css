@@ -1,0 +1,7 @@
+.tg-stack { position: relative; }
+.tg-stack--on > section {
+  position: sticky;
+  top: 0; /* recalculé en JS : min(hauteur de l’en-tête, bas de la section) */
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -18px 50px rgba(11, 19, 32, 0.28);
+}
