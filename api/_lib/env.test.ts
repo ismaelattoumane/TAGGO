@@ -6,6 +6,7 @@ const TEST_ENV = {
   STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',
   SUPABASE_URL: 'https://project.supabase.co',
   SUPABASE_SERVICE_ROLE_KEY: 'service-role-placeholder',
+  SUPABASE_ANON_KEY: 'anon-placeholder',
   APP_URL: 'https://taggo.test',
 }
 
@@ -16,6 +17,7 @@ describe('readServerEnv', () => {
       stripeWebhookSecret: 'whsec_placeholder',
       supabaseUrl: 'https://project.supabase.co',
       supabaseServiceRoleKey: 'service-role-placeholder',
+      supabaseAnonKey: 'anon-placeholder',
       appUrl: 'https://taggo.test',
     })
   })

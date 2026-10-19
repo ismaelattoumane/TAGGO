@@ -22,6 +22,21 @@ export function createServerSupabase(env: ServerEnv): SupabaseClient {
 }
 
 /**
+ * Client Supabase pour les opérations utilisateur authentifiées.
+ * Utilise la clé publique et le JWT transmis par le navigateur.
+ * Ne dispose JAMAIS de la clé service_role.
+ */
+export function createUserSupabase(env: ServerEnv, bearerToken: string): SupabaseClient {
+  if (!env.supabaseUrl || !env.supabaseAnonKey) {
+    throw new Error('server_database_not_configured')
+  }
+  return createClient(env.supabaseUrl, env.supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${bearerToken}` } },
+  })
+}
+
+/**
  * Résout l'utilisateur réel à partir du JWT fourni par le navigateur.
  * Le `customerId` n'est JAMAIS lu depuis le corps de la requête.
  */

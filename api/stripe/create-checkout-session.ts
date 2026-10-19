@@ -2,7 +2,7 @@ import { isServerDatabaseConfigured, isStripeConfigured, readServerEnv } from '.
 import { createSupabaseCatalogLookup } from '../_lib/catalogServer'
 import { createCheckoutSession, checkoutResponse } from '../_lib/checkout'
 import { attachStripeSession, createShopOrder } from '../_lib/orderServer'
-import { createServerSupabase, extractBearerToken, resolveAuthenticatedUser } from '../_lib/supabaseAdmin'
+import { createServerSupabase, createUserSupabase, extractBearerToken, resolveAuthenticatedUser } from '../_lib/supabaseAdmin'
 import { createStripeGateway } from '../_lib/stripeGateway'
 import { jsonBody, resolveAppUrl } from '../_lib/http'
 import { failure } from '../_lib/errors'
@@ -34,6 +34,13 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
   const user = await resolveAuthenticatedUser(supabase, token)
   if (!user) return failure('unauthenticated')
 
+  let userSupabase
+  try {
+    userSupabase = createUserSupabase(env, token as string)
+  } catch {
+    return failure('stripe_unavailable')
+  }
+
   let stripe
   try {
     stripe = createStripeGateway(env.stripeSecretKey as string)
@@ -45,8 +52,8 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
   const appUrl = resolveAppUrl(req, env.appUrl)
   const outcome = await createCheckoutSession(
     {
-      createOrder: (orderInput) => createShopOrder(supabase, orderInput),
-      attachStripeSession: (orderId, sessionId) => attachStripeSession(supabase, orderId, sessionId),
+      createOrder: (orderInput) => createShopOrder(userSupabase, orderInput),
+      attachStripeSession: (orderId, sessionId) => attachStripeSession(supabase, orderId, sessionId, user.id),
       stripe,
       catalog: createSupabaseCatalogLookup(supabase),
       successUrl: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,

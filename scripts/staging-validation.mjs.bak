@@ -1,0 +1,813 @@
+#!/usr/bin/env node
+// TAGGO — Step 15: Staging Validation Script
+// Supabase STAGING only: vnggdtnrrmxsxfdqyqtr (Frankfurt)
+// Uses only the public anon key and user-issued JWTs. Never use service_role here.
+// WARNING: signup creates two persistent test users. QR creation is attempted only
+// when two confirmed user JWTs are supplied. Review the cleanup result after running.
+
+import { pathToFileURL } from 'node:url'
+
+const EXPECTED_PROJECT_REF = 'vnggdtnrrmxsxfdqyqtr'
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
+const SIGNUP_ENABLED = process.env.STAGING_SIGNUP_TEST === 'true'
+
+let passed = 0
+let failed = 0
+const skipped = []
+const failures = []
+const manualSteps = []
+const createdResources = []
+
+function ok(name, detail = '') {
+  passed += 1
+  console.log(`  \x1b[32mPASS\x1b[0m ${name}${detail ? ` \x1b[90m${detail}\x1b[0m` : ''}`)
+}
+
+function ko(name, detail = '') {
+  failed += 1
+  failures.push(`${name} :: ${detail}`)
+  console.log(`  \x1b[31mFAIL\x1b[0m ${name}${detail ? ` \x1b[31m${detail}\x1b[0m` : ''}`)
+}
+
+function check(name, condition, detail = '') {
+  condition ? ok(name, detail) : ko(name, detail)
+}
+
+function skip(name, reason) {
+  skipped.push(`${name} :: ${reason}`)
+  console.log(`  \x1b[33mSKIP\x1b[0m ${name} — ${reason}`)
+}
+
+function section(title) {
+  console.log(`\n\x1b[1m== ${title} ==\x1b[0m`)
+}
+
+function manual(name, instructions) {
+  manualSteps.push({ name, instructions })
+  console.log(`  \x1b[33mMANUAL\x1b[0m ${name}\n         ${instructions}`)
+}
+
+function decodeJwt(token) {
+  try {
+    const parts = String(token).split('.')
+    if (parts.length !== 3) {
+      throw new Error('JWT must have 3 segments')
+    }
+
+    return JSON.parse(
+      Buffer.from(parts[1], 'base64url').toString('utf8'),
+    )
+  } catch (error) {
+    throw new Error(`JWT illisible: ${error.message}`)
+  }
+}
+
+async function request(url, {
+  method = 'GET',
+  token,
+  body,
+  headers = {},
+} = {}) {
+  const bearer = token || ANON_KEY
+
+  const opts = {
+    method,
+    headers: {
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${bearer}`,
+      Accept: 'application/json',
+      ...(body === undefined
+        ? {}
+        : { 'Content-Type': 'application/json' }),
+      Prefer: 'return=representation',
+      ...headers,
+    },
+    ...(body === undefined
+      ? {}
+      : { body: JSON.stringify(body) }),
+  }
+
+  try {
+    const response = await fetch(url, opts)
+    const text = await response.text()
+
+    let json = null
+
+    try {
+      json = text ? JSON.parse(text) : null
+    } catch {
+      // Non-JSON response.
+    }
+
+    return {
+      status: response.status,
+      text,
+      json,
+      headers: response.headers,
+    }
+  } catch (error) {
+    return {
+      status: 0,
+      text: error?.message || String(error),
+      json: null,
+      headers: null,
+    }
+  }
+}
+
+function rest(path) {
+  return `${SUPABASE_URL}/rest/v1/${path}`
+}
+
+function auth(path) {
+  return `${SUPABASE_URL}/auth/v1/${path}`
+}
+
+function isDenied(result) {
+  return (
+    result.status === 401 ||
+    result.status === 403 ||
+    (result.status >= 400 && result.status < 500)
+  )
+}
+
+// Only HTTP 200 with [] proves that the resource is absent.
+// HTTP 204, transport errors, malformed responses and server errors
+// are inconclusive and must not be treated as proof of absence.
+async function readQr(publicId, token) {
+  const result = await request(
+    rest(
+      `qr_codes?select=id,public_id,owner_id&public_id=eq.${encodeURIComponent(publicId)}`,
+    ),
+    { token },
+  )
+
+  if (result.status !== 200 || !Array.isArray(result.json)) {
+    return {
+      found: false,
+      ambiguous: true,
+      status: result.status,
+      detail: `Lecture non concluante (HTTP ${result.status})`,
+    }
+  }
+
+  if (result.json.length === 0) {
+    return {
+      found: false,
+      ambiguous: false,
+      status: 200,
+      detail: 'HTTP 200, tableau vide',
+    }
+  }
+
+  if (result.json.length !== 1 || !result.json[0]?.id) {
+    return {
+      found: true,
+      ambiguous: true,
+      status: 200,
+      rows: result.json,
+      detail: 'Résultat multiple ou identifiant absent',
+    }
+  }
+
+  return {
+    found: true,
+    ambiguous: false,
+    status: 200,
+    row: result.json[0],
+    detail: 'Ligne trouvée',
+  }
+}
+
+function classifyPreCheck(result, expectedId) {
+  if (!result || result.ambiguous === true) {
+    return {
+      safe: false,
+      reason: 'lecture ambiguë ou en erreur',
+    }
+  }
+
+  if (result.found === false) {
+    return {
+      safe: true,
+      alreadyAbsent: true,
+      reason: 'ressource déjà absente',
+    }
+  }
+
+  if (!result.row?.id || result.row.id !== expectedId) {
+    return {
+      safe: false,
+      reason: 'ID relu différent de l’ID suivi',
+    }
+  }
+
+  return {
+    safe: true,
+    alreadyAbsent: false,
+    reason: 'ID confirmé',
+  }
+}
+
+function classifyCleanup(deleteResult, verifyResult, expectedId) {
+  const deleteOk =
+    deleteResult.status === 200 ||
+    deleteResult.status === 204
+
+  const verifyConfirmedAbsent = Boolean(
+    verifyResult &&
+    verifyResult.ambiguous !== true &&
+    verifyResult.found === false &&
+    verifyResult.status === 200,
+  )
+
+  const verifyStillSame = Boolean(
+    verifyResult &&
+    verifyResult.ambiguous !== true &&
+    verifyResult.found === true &&
+    verifyResult.row?.id === expectedId,
+  )
+
+  if (verifyConfirmedAbsent) {
+    return {
+      ok: true,
+      detail: `absence vérifiée après suppression (HTTP DELETE ${deleteResult.status})`,
+    }
+  }
+
+  if (verifyStillSame) {
+    return {
+      ok: false,
+      detail: `la ressource ${expectedId} existe encore après DELETE (HTTP ${deleteResult.status})`,
+    }
+  }
+
+  return {
+    ok: false,
+    detail:
+      `nettoyage non confirmé ` +
+      `(DELETE HTTP ${deleteResult.status}, ` +
+      `vérification HTTP ${verifyResult?.status ?? 'N/A'})` +
+      `${deleteOk ? '' : '; DELETE non confirmé'}`,
+  }
+}
+
+async function cleanupCreatedQr(item, token) {
+  section(`Nettoyage — ${item.publicId}`)
+
+  const before = await readQr(item.publicId, token)
+  const pre = classifyPreCheck(before, item.id)
+
+  if (!pre.safe) {
+    ko(
+      `précontrôle avant suppression ${item.publicId}`,
+      pre.reason,
+    )
+
+    manual(
+      'Nettoyage manuel requis',
+      `Vérifier dans Supabase STAGING le TAGGO public_id=${item.publicId} et id=${item.id}. Ne pas supprimer une autre ligne.`,
+    )
+
+    return
+  }
+
+  if (pre.alreadyAbsent) {
+    ok(`ressource déjà absente ${item.publicId}`)
+    return
+  }
+
+  // Filter by both the exact primary key and public_id.
+  const filter =
+    `id=eq.${encodeURIComponent(item.id)}` +
+    `&public_id=eq.${encodeURIComponent(item.publicId)}`
+
+  const deleted = await request(
+    rest(`qr_codes?${filter}`),
+    {
+      method: 'DELETE',
+      token,
+    },
+  )
+
+  const after = await readQr(item.publicId, token)
+  const outcome = classifyCleanup(deleted, after, item.id)
+
+  if (outcome.ok) {
+    ok(`nettoyage confirmé ${item.publicId}`, outcome.detail)
+  } else {
+    ko(`nettoyage ${item.publicId}`, outcome.detail)
+
+    manual(
+      'Nettoyage manuel requis',
+      `Contrôler uniquement la ligne id=${item.id}, public_id=${item.publicId} dans Supabase STAGING.`,
+    )
+  }
+}
+
+async function main() {
+  if (!SUPABASE_URL || !ANON_KEY) {
+    console.error(
+      'ERROR: VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY doivent être définis.',
+    )
+    console.error(
+      'Charge les variables publiques STAGING avant de lancer ce script.',
+    )
+
+    process.exitCode = 1
+    return
+  }
+
+  let parsedUrl
+
+  try {
+    parsedUrl = new URL(SUPABASE_URL)
+  } catch {
+    ko(
+      'URL Supabase valide',
+      'VITE_SUPABASE_URL invalide',
+    )
+    process.exitCode = 1
+    return
+  }
+
+  if (
+    parsedUrl.hostname !==
+    `${EXPECTED_PROJECT_REF}.supabase.co`
+  ) {
+    ko(
+      'garde-fou projet STAGING',
+      `URL détectée=${parsedUrl.hostname}; attendu=${EXPECTED_PROJECT_REF}.supabase.co`,
+    )
+
+    console.error(
+      'Arrêt immédiat : ce script est autorisé uniquement sur le projet STAGING attendu.',
+    )
+
+    process.exitCode = 1
+    return
+  }
+
+  section('A — Disponibilité du projet STAGING')
+
+  const health = await request(auth('settings'))
+
+  check(
+    'l’URL Supabase répond',
+    health.status === 200,
+    `HTTP ${health.status}`,
+  )
+
+  const authSettings = health
+
+  check(
+    'les paramètres Auth sont accessibles publiquement',
+    authSettings.status === 200 && Boolean(authSettings.json),
+    `HTTP ${authSettings.status}`,
+  )
+
+  const confirmationsEnabled =
+    authSettings.json?.mailer_autoconfirm === false
+
+  check(
+    'la confirmation d’email est requise',
+    confirmationsEnabled,
+    `mailer_autoconfirm=${authSettings.json?.mailer_autoconfirm}`,
+  )
+
+  check(
+    'disable_signup est false (inscription ouverte)',
+    authSettings.json?.disable_signup === false,
+    `disable_signup=${authSettings.json?.disable_signup}`,
+  )
+
+  section('B — Structure de la clé anon')
+
+  let anonPayload
+
+  try {
+    anonPayload = decodeJwt(ANON_KEY)
+  } catch (error) {
+    ko('la clé anon est un JWT décodable', error.message)
+    printSummary()
+    process.exitCode = 1
+    return
+  }
+
+  check(
+    'le JWT anon porte le rôle anon',
+    anonPayload.role === 'anon',
+    `role=${anonPayload.role}`,
+  )
+
+  check(
+    'le JWT anon correspond au projet STAGING',
+    anonPayload.ref === EXPECTED_PROJECT_REF,
+    `ref=${anonPayload.ref}`,
+  )
+
+  check(
+    'le JWT anon n’est pas expiré',
+    Number(anonPayload.exp) > Math.floor(Date.now() / 1000),
+    `exp=${anonPayload.exp}`,
+  )
+
+  section('C — Refus des accès anonymes aux données privées')
+
+  const privateTableChecks = [
+    ['lecture des profils', 'profiles?select=id&limit=1'],
+    ['lecture des TAGGO privés', 'qr_codes?select=id,owner_id&limit=1'],
+    ['lecture des abonnements', 'taggo_subscriptions?select=id&limit=1'],
+    ['lecture des commandes', 'shop_orders?select=id&limit=1'],
+    ['lecture des scans', 'taggo_scans?select=id&limit=1'],
+    ['lecture des événements email', 'email_events?select=id&limit=1'],
+  ]
+
+  for (const [label, path] of privateTableChecks) {
+    const result = await request(rest(path))
+
+    // A successful empty result can be correct when RLS filters rows.
+    // This checks non-exposure only, not the correctness of every policy.
+    const exposedRows =
+      result.status === 200 &&
+      Array.isArray(result.json) &&
+      result.json.length > 0
+
+    check(
+      `${label} : aucune ligne exposée à anon`,
+      !exposedRows &&
+        result.status !== 0 &&
+        result.status < 500,
+      `HTTP ${result.status}${
+        Array.isArray(result.json)
+          ? `, rows=${result.json.length}`
+          : ''
+      }`,
+    )
+  }
+
+  for (const [label, rpc] of [
+    [
+      'appel anonyme de record_taggo_scan refusé',
+      'record_taggo_scan',
+    ],
+    [
+      'appel anonyme de get_taggo_scan_stats refusé',
+      'get_taggo_scan_stats',
+    ],
+    [
+      'appel anonyme de expire_due_taggo_subscriptions refusé',
+      'expire_due_taggo_subscriptions',
+    ],
+  ]) {
+    const result = await request(
+      `${SUPABASE_URL}/rest/v1/rpc/${rpc}`,
+      {
+        method: 'POST',
+        body: {},
+      },
+    )
+
+    check(label, isDenied(result), `HTTP ${result.status}`)
+  }
+
+  section('D — Inscription Auth')
+
+  if (!SIGNUP_ENABLED) {
+    skip(
+      'création de comptes de test',
+      'désactivée par défaut; définir STAGING_SIGNUP_TEST=true uniquement si tu acceptes de créer deux comptes persistants',
+    )
+  } else {
+    const timestamp = Date.now().toString(36)
+    const testPassword = `TgVal-${cryptoRandomSuffix()}!a9`
+
+    const emails = [1, 2].map(
+      n => `staging-val-${n}-${timestamp}@taggo.space`,
+    )
+
+    for (let i = 0; i < emails.length; i += 1) {
+      const signup = await request(auth('signup'), {
+        method: 'POST',
+        body: {
+          email: emails[i],
+          password: testPassword,
+          options: {
+            data: {
+              full_name: `Staging Test Account ${i + 1}`,
+            },
+          },
+        },
+      })
+
+      check(
+        `inscription du compte ${i + 1}`,
+        signup.status === 200,
+        `HTTP ${signup.status}`,
+      )
+
+      if (signup.status === 200) {
+        check(
+          `l’email du compte ${i + 1} est conservé`,
+          signup.json?.email === emails[i],
+          `email=${signup.json?.email ?? 'N/A'}`,
+        )
+
+        check(
+          `aucune session sans confirmation (${i + 1})`,
+          !signup.json?.session,
+          `session=${signup.json?.session ? 'présente' : 'absente'}`,
+        )
+      }
+    }
+
+    manual(
+      'Comptes de test créés',
+      `Comptes potentiellement persistants : ${emails.join(' ; ')}. Confirmer ou supprimer ces comptes depuis Supabase Dashboard après les tests.`,
+    )
+  }
+
+  section('E — Tests authentifiés avec deux JWT confirmés')
+
+  const jwtA = process.env.STAGING_JWT_A
+  const jwtB = process.env.STAGING_JWT_B
+
+  if (!jwtA || !jwtB) {
+    skip(
+      'tests RLS authentifiés',
+      'STAGING_JWT_A et STAGING_JWT_B non définis',
+    )
+
+    manual(
+      'Préparer les JWT',
+      'Fournir deux access_token de comptes STAGING confirmés, distincts, dans STAGING_JWT_A et STAGING_JWT_B. Ne jamais utiliser service_role.',
+    )
+  } else {
+    let payloadA
+    let payloadB
+
+    try {
+      payloadA = decodeJwt(jwtA)
+      payloadB = decodeJwt(jwtB)
+    } catch (error) {
+      ko('JWT authentifiés décodables', error.message)
+      printSummary()
+      process.exitCode = 1
+      return
+    }
+
+    check(
+      'JWT A porte le rôle authenticated',
+      payloadA.role === 'authenticated',
+      `role=${payloadA.role}`,
+    )
+
+    check(
+      'JWT B porte le rôle authenticated',
+      payloadB.role === 'authenticated',
+      `role=${payloadB.role}`,
+    )
+
+    check(
+      'JWT A et B ont des sujets différents',
+      Boolean(
+        payloadA.sub &&
+        payloadB.sub &&
+        payloadA.sub !== payloadB.sub,
+      ),
+      `subA=${payloadA.sub?.slice(0, 8) ?? 'N/A'}…, subB=${payloadB.sub?.slice(0, 8) ?? 'N/A'}…`,
+    )
+
+    check(
+      'JWT A non expiré',
+      Number(payloadA.exp) > Math.floor(Date.now() / 1000),
+      `exp=${payloadA.exp}`,
+    )
+
+    check(
+      'JWT B non expiré',
+      Number(payloadB.exp) > Math.floor(Date.now() / 1000),
+      `exp=${payloadB.exp}`,
+    )
+
+    const userA = await request(auth('user'), { token: jwtA })
+    const userB = await request(auth('user'), { token: jwtB })
+
+    check(
+      'auth.getUser() valide JWT A',
+      userA.status === 200 &&
+        userA.json?.id === payloadA.sub,
+      `HTTP ${userA.status}`,
+    )
+
+    check(
+      'auth.getUser() valide JWT B',
+      userB.status === 200 &&
+        userB.json?.id === payloadB.sub,
+      `HTTP ${userB.status}`,
+    )
+
+    section('E.1 — Création d’un TAGGO de test et protection RLS')
+
+    const suffix =
+      `${Date.now().toString(36)}${cryptoRandomSuffix()}`
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .slice(-10)
+
+    const publicId = `TGG-${suffix}`
+
+    const createQr = await request(rest('qr_codes'), {
+      method: 'POST',
+      token: jwtA,
+      body: {
+        owner_id: payloadA.sub,
+        public_id: publicId,
+        title: 'Staging validation TAGGO',
+        destination_url: 'https://staging.taggo.space/val',
+        is_public: false,
+        lifecycle_status: 'activated',
+      },
+    })
+
+    check(
+      'création du TAGGO de test autorisée au propriétaire',
+      createQr.status === 201,
+      `HTTP ${createQr.status}`,
+    )
+
+    const created = Array.isArray(createQr.json)
+      ? createQr.json[0]
+      : createQr.json
+
+    if (!created?.id || !created?.public_id) {
+      if (createQr.status === 201) {
+        ko(
+          'identifiant de TAGGO créé récupérable',
+          'HTTP 201 mais réponse sans id/public_id; ressource potentiellement orpheline, aucune suppression automatique tentée',
+        )
+
+        manual(
+          'Risque de ressource orpheline',
+          `Rechercher public_id=${publicId} dans la table qr_codes de STAGING. Ne supprimer que la ligne correspondant à cette tentative.`,
+        )
+      } else {
+        skip(
+          'tests d’écriture sur le TAGGO',
+          'la création n’a pas fourni de ligne; vérifier la politique/contrainte SQL correspondant à la réponse',
+        )
+      }
+    } else {
+      createdResources.push({
+        id: created.id,
+        publicId: created.public_id,
+        token: jwtA,
+      })
+
+      const pid = encodeURIComponent(created.public_id)
+
+      for (const [column, value] of [
+        ['lifecycle_status', 'active'],
+        ['status', 'active'],
+        ['is_public', true],
+        ['owner_id', payloadB.sub],
+      ]) {
+        const attempt = await request(
+          rest(`qr_codes?public_id=eq.${pid}`),
+          {
+            method: 'PATCH',
+            token: jwtA,
+            body: { [column]: value },
+          },
+        )
+
+        check(
+          `écriture directe de ${column} refusée`,
+          attempt.status >= 400,
+          `HTTP ${attempt.status}`,
+        )
+      }
+
+      const attackerPatch = await request(
+        rest(`qr_codes?public_id=eq.${pid}`),
+        {
+          method: 'PATCH',
+          token: jwtB,
+          body: {
+            title: 'Tentative de modification interdite',
+          },
+        },
+      )
+
+      check(
+        'un autre utilisateur ne modifie pas le TAGGO du propriétaire',
+        attackerPatch.status === 200 &&
+          Array.isArray(attackerPatch.json) &&
+          attackerPatch.json.length === 0,
+        `HTTP ${attackerPatch.status}, rows=${
+          Array.isArray(attackerPatch.json)
+            ? attackerPatch.json.length
+            : '?'
+        }`,
+      )
+
+      const ownerRead = await request(
+        rest(
+          `qr_codes?select=id,public_id,owner_id&public_id=eq.${pid}`,
+        ),
+        { token: jwtA },
+      )
+
+      check(
+        'le propriétaire peut relire son TAGGO',
+        ownerRead.status === 200 &&
+          Array.isArray(ownerRead.json) &&
+          ownerRead.json.some(row => row.id === created.id),
+        `HTTP ${ownerRead.status}`,
+      )
+
+      const attackerRead = await request(
+        rest(
+          `qr_codes?select=id,public_id,owner_id&public_id=eq.${pid}`,
+        ),
+        { token: jwtB },
+      )
+
+      check(
+        'un autre utilisateur ne voit pas le TAGGO privé',
+        attackerRead.status === 200 &&
+          Array.isArray(attackerRead.json) &&
+          attackerRead.json.length === 0,
+        `HTTP ${attackerRead.status}, rows=${
+          Array.isArray(attackerRead.json)
+            ? attackerRead.json.length
+            : '?'
+        }`,
+      )
+    }
+
+    section('E.2 — Nettoyage des seules ressources créées par ce script')
+
+    for (const item of createdResources) {
+      await cleanupCreatedQr(item, item.token)
+    }
+  }
+
+  section('F — Vérifications manuelles restantes')
+
+  manual(
+    'Validation finale',
+    'Vérifier les résultats PASS/FAIL/SKIP ci-dessus. Ce script ne prouve pas la conformité complète du schéma ni ne remplace les tests SQL locaux. Aucun db reset, db push ou migration repair n’est exécuté.',
+  )
+
+  printSummary()
+
+  process.exitCode = failed === 0 ? 0 : 1
+}
+
+function cryptoRandomSuffix() {
+  // Non-secret uniqueness helper; no external dependency required.
+  return Math.random().toString(36).slice(2, 8).toUpperCase()
+}
+
+function printSummary() {
+  console.log('\n\x1b[1m== Résumé ==\x1b[0m')
+  console.log(
+    `PASS: ${passed} | FAIL: ${failed} | SKIP: ${skipped.length} | MANUAL: ${manualSteps.length}`,
+  )
+
+  if (failures.length) {
+    console.log('\nÉchecs:')
+    for (const item of failures) {
+      console.log(` - ${item}`)
+    }
+  }
+
+  if (skipped.length) {
+    console.log('\nTests ignorés:')
+    for (const item of skipped) {
+      console.log(` - ${item}`)
+    }
+  }
+
+  if (manualSteps.length) {
+    console.log('\nÉtapes manuelles:')
+    for (const item of manualSteps) {
+      console.log(
+        ` - ${item.name}: ${item.instructions.replace(/\n/g, ' ')}`,
+      )
+    }
+  }
+}
+
+const isDirectRun =
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (isDirectRun) {
+  main().catch(error => {
+    console.error('\nErreur fatale:', error?.stack || error)
+    process.exitCode = 1
+  })
+}

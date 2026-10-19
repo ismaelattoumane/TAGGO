@@ -1,0 +1,1118 @@
+#!/usr/bin/env node
+// TAGGO — Step 15: Staging Validation Script
+// Supabase STAGING only: vnggdtnrrmxsxfdqyqtr (Frankfurt)
+// Uses only the public anon key and user-issued JWTs. Never use service_role here.
+// WARNING: signup creates two persistent test users. QR creation is attempted only
+// when two confirmed user JWTs are supplied. Review the cleanup result after running.
+
+import { pathToFileURL } from 'node:url'
+
+const EXPECTED_PROJECT_REF = 'vnggdtnrrmxsxfdqyqtr'
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL
+const ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY
+const SIGNUP_ENABLED = process.env.STAGING_SIGNUP_TEST === 'true'
+
+const QR_TRIGGER_MESSAGES = [
+  'qr_codes_server_fields_are_read_only',
+  'qr_codes_must_be_created_as_draft',
+]
+
+let passed = 0
+let failed = 0
+const skipped = []
+const failures = []
+const manualSteps = []
+const createdResources = []
+
+function ok(name, detail = '') {
+  passed += 1
+  console.log(`  \x1b[32mPASS\x1b[0m ${name}${detail ? ` \x1b[90m${detail}\x1b[0m` : ''}`)
+}
+
+function ko(name, detail = '') {
+  failed += 1
+  failures.push(`${name} :: ${detail}`)
+  console.log(`  \x1b[31mFAIL\x1b[0m ${name}${detail ? ` \x1b[31m${detail}\x1b[0m` : ''}`)
+}
+
+function check(name, condition, detail = '') {
+  condition ? ok(name, detail) : ko(name, detail)
+}
+
+function skip(name, reason) {
+  skipped.push(`${name} :: ${reason}`)
+  console.log(`  \x1b[33mSKIP\x1b[0m ${name} — ${reason}`)
+}
+
+function section(title) {
+  console.log(`\n\x1b[1m== ${title} ==\x1b[0m`)
+}
+
+function manual(name, instructions) {
+  manualSteps.push({ name, instructions })
+  console.log(`  \x1b[33mMANUAL\x1b[0m ${name}\n         ${instructions}`)
+}
+
+function decodeJwt(token) {
+  try {
+    const parts = String(token).split('.')
+    if (parts.length !== 3) {
+      throw new Error('JWT must have 3 segments')
+    }
+
+    return JSON.parse(
+      Buffer.from(parts[1], 'base64url').toString('utf8'),
+    )
+  } catch (error) {
+    throw new Error(`JWT illisible: ${error.message}`)
+  }
+}
+
+async function request(url, {
+  method = 'GET',
+  token,
+  body,
+  headers = {},
+} = {}) {
+  const bearer = token || ANON_KEY
+
+  const opts = {
+    method,
+    headers: {
+      apikey: ANON_KEY,
+      Authorization: `Bearer ${bearer}`,
+      Accept: 'application/json',
+      ...(body === undefined
+        ? {}
+        : { 'Content-Type': 'application/json' }),
+      Prefer: 'return=representation',
+      ...headers,
+    },
+    ...(body === undefined
+      ? {}
+      : { body: JSON.stringify(body) }),
+  }
+
+  try {
+    const response = await fetch(url, opts)
+    const text = await response.text()
+
+    let json = null
+
+    try {
+      json = text ? JSON.parse(text) : null
+    } catch {
+      // Non-JSON response.
+    }
+
+    return {
+      status: response.status,
+      text,
+      json,
+      headers: response.headers,
+    }
+  } catch (error) {
+    return {
+      status: 0,
+      text: error?.message || String(error),
+      json: null,
+      headers: null,
+    }
+  }
+}
+
+function rest(path) {
+  return `${SUPABASE_URL}/rest/v1/${path}`
+}
+
+function auth(path) {
+  return `${SUPABASE_URL}/auth/v1/${path}`
+}
+
+function isDenied(result) {
+  return result?.status === 401 || result?.status === 403
+}
+
+
+// Only HTTP 200 with [] proves that the resource is absent.
+// HTTP 204, transport errors, malformed responses and server errors
+// are inconclusive and must not be treated as proof of absence.
+async function readQr(publicId, token) {
+  const result = await request(
+    rest(
+      `qr_codes?select=id,public_id,owner_id&public_id=eq.${encodeURIComponent(publicId)}`,
+    ),
+    { token },
+  )
+
+  if (result.status !== 200 || !Array.isArray(result.json)) {
+    return {
+      found: false,
+      ambiguous: true,
+      status: result.status,
+      detail: `Lecture non concluante (HTTP ${result.status})`,
+    }
+  }
+
+  if (result.json.length === 0) {
+    return {
+      found: false,
+      ambiguous: false,
+      status: 200,
+      detail: 'HTTP 200, tableau vide',
+    }
+  }
+
+  if (result.json.length !== 1 || !result.json[0]?.id) {
+    return {
+      found: true,
+      ambiguous: true,
+      status: 200,
+      rows: result.json,
+      detail: 'Résultat multiple ou identifiant absent',
+    }
+  }
+
+  return {
+    found: true,
+    ambiguous: false,
+    status: 200,
+    row: result.json[0],
+    detail: 'Ligne trouvée',
+  }
+}
+
+
+export function classifyResponse(status) {
+  if (status === 0) return 'network_error'
+  if (status === 200 || status === 201) return 'success'
+  if (status === 204) return 'success_no_content'
+  if (status === 404) return 'not_found'
+  if (status === 401 || status === 403 || (status >= 400 && status < 500)) return 'denied'
+  if (status >= 500 && status <= 599) return 'server_error'
+  return 'unexpected'
+}
+
+
+export function isAnonymousAccessBlocked(result, isRlsFilteredTable) {
+  if (!result) return false
+
+  const explicitlyDenied =
+    (result.status === 401 || result.status === 403) &&
+    result.type === 'denied'
+
+  if (explicitlyDenied) return true
+
+  const rlsFiltered =
+    isRlsFilteredTable === true &&
+    result.type === 'success' &&
+    result.status === 200 &&
+    Array.isArray(result.json) &&
+    result.json.length === 0
+
+  return rlsFiltered
+}
+
+export function classifyPatchProtection(
+  attempt,
+  beforeReadOk,
+  afterReadOk,
+  unchanged,
+  triggerMessages = [],
+) {
+  const readsOk = Boolean(beforeReadOk && afterReadOk)
+  const stateVerified = readsOk && unchanged === true
+  const status = attempt?.status
+
+  const explicitDenied = status === 401 || status === 403
+
+  const isSilent =
+    status === 200 &&
+    Array.isArray(attempt?.json) &&
+    attempt.json.length === 0
+
+  const isTriggerRaise =
+    status === 500 &&
+    stateVerified &&
+    triggerMessages.some(message =>
+      (attempt?.text || '').includes(message),
+    )
+
+  const denied = Boolean(
+    stateVerified &&
+    (explicitDenied || isSilent || isTriggerRaise),
+  )
+
+  return {
+    readsOk,
+    stateVerified,
+    isSilent,
+    isTriggerRaise,
+    denied,
+  }
+}
+
+export function classifyCrossUserPatch(beforeRead, attempt, afterRead) {
+  const beforeRow =
+    beforeRead?.status === 200 &&
+    Array.isArray(beforeRead?.json) &&
+    beforeRead.json.length === 1
+      ? beforeRead.json[0]
+      : null
+
+  const afterRow =
+    afterRead?.status === 200 &&
+    Array.isArray(afterRead?.json) &&
+    afterRead.json.length === 1
+      ? afterRead.json[0]
+      : null
+
+  const readsOk =
+    Boolean(beforeRow) &&
+    Boolean(afterRow) &&
+    beforeRow.id === afterRow.id
+
+  const ownerUnchanged =
+    readsOk &&
+    Object.is(beforeRow.owner_id, afterRow.owner_id)
+
+  const titleUnchanged =
+    readsOk &&
+    Object.is(beforeRow.title, afterRow.title)
+
+  const stateVerified = readsOk && ownerUnchanged && titleUnchanged
+
+  const status = attempt?.status
+
+  const explicitDenied = status === 401 || status === 403
+
+  const silentEmpty =
+    status === 200 &&
+    Array.isArray(attempt?.json) &&
+    attempt.json.length === 0
+
+  const returnedRow =
+    status === 200 &&
+    Array.isArray(attempt?.json) &&
+    attempt.json.length > 0
+
+  const denied = Boolean(
+    stateVerified &&
+    (explicitDenied || silentEmpty),
+  )
+
+  const modified = Boolean(returnedRow || !titleUnchanged)
+
+  return {
+    readsOk,
+    ownerUnchanged,
+    titleUnchanged,
+    stateVerified,
+    denied,
+    modified,
+  }
+}
+
+export function handleOrphanCreation(createQr, retryResult) {
+  if (createQr?.status !== 201 || createQr?.type !== 'success') {
+    return { handled: false, orphan: false }
+  }
+
+  const created = Array.isArray(createQr.json) ? createQr.json[0] : null
+  if (created?.id && created?.public_id) {
+    return {
+      handled: true,
+      orphan: false,
+      id: created.id,
+      publicId: created.public_id
+    }
+  }
+
+  const publicId = created?.public_id
+  if (publicId && retryResult?.found === true &&
+      retryResult.ambiguous !== true &&
+      (retryResult.data?.id || retryResult.row?.id)) {
+    const recovered = retryResult.data || retryResult.row
+    return {
+      handled: true,
+      orphan: false,
+      id: recovered.id,
+      publicId: recovered.public_id || publicId
+    }
+  }
+
+  return { handled: false, orphan: true, publicId }
+}
+
+
+export function classifyPreCheck(result, expectedId) {
+  const data = result?.data || result?.row
+  const found = result?.found === true
+  const ambiguous = result?.ambiguous === true
+
+  const readError = Boolean(result?.error) || (
+    !result ||
+    (
+      result.status !== undefined &&
+      result.status !== 200 &&
+      result.status !== 204
+    )
+  )
+
+  const idMatches =
+    expectedId === undefined ||
+    data?.id === expectedId
+
+  const alreadyAbsent =
+    !found &&
+    !readError &&
+    !ambiguous &&
+    typeof result?.detail === 'string' &&
+    /empty array\s*\(200\)|HTTP 200, tableau vide/i.test(result.detail)
+
+  const inconclusive =
+    !found &&
+    !readError &&
+    !ambiguous &&
+    !alreadyAbsent
+
+  const safe =
+    found &&
+    !ambiguous &&
+    !readError &&
+    Boolean(data?.id) &&
+    idMatches
+
+  return {
+    found,
+    data,
+    ambiguous,
+    readError,
+    alreadyAbsent,
+    inconclusive,
+    idMatches,
+    safe,
+    reason: ambiguous
+      ? 'lecture ambiguë'
+      : readError
+        ? 'erreur de lecture'
+        : found && !idMatches
+          ? 'identifiant différent de la ressource suivie'
+          : alreadyAbsent
+            ? 'ressource déjà absente'
+            : inconclusive
+              ? 'lecture non concluante'
+              : 'ressource trouvée',
+  }
+}
+
+
+export function classifyCleanup(deleteResult, verifyResult, preCheck) {
+  const pre = classifyPreCheck(preCheck)
+  const verifyHasDetail = typeof verifyResult?.detail === 'string'
+  const verifyAbsent = verifyResult?.found === false &&
+    !verifyResult?.error && verifyHasDetail &&
+    /empty array\s*\(200\)|HTTP 200, tableau vide|204 no content/i.test(verifyResult.detail)
+  const deleteOk = Boolean(
+    deleteResult &&
+    (deleteResult.status === 200 || deleteResult.status === 204) &&
+    (deleteResult.type === 'success' || deleteResult.type === 'success_no_content' ||
+      deleteResult.type === undefined)
+  )
+
+  const result = {
+    ok: false,
+    success: false,
+    alreadyAbsent: false,
+    readError: false,
+    deleteFailed: false,
+    detail: 'nettoyage non confirmé'
+  }
+
+  if (pre.readError || pre.ambiguous) {
+    result.readError = true
+    result.detail = 'pré-contrôle impossible ou ambigu : suppression non effectuée'
+    return result
+  }
+
+  if (pre.alreadyAbsent) {
+    result.ok = result.success = true
+    result.alreadyAbsent = true
+    result.detail = 'ressource déjà absente, confirmé par HTTP 200 et tableau vide'
+    return result
+  }
+
+  if (pre.inconclusive || !pre.found || !pre.data?.id) {
+    result.deleteFailed = true
+    result.detail = 'pré-contrôle non concluant : suppression non confirmée'
+    return result
+  }
+
+  if (verifyResult?.error || verifyResult?.ambiguous === true ||
+      verifyResult?.status !== undefined &&
+      verifyResult.status !== 200 && verifyResult.status !== 204) {
+    result.readError = true
+    result.detail = 'erreur lors de la vérification après suppression'
+    return result
+  }
+
+  if (deleteOk && verifyAbsent) {
+    result.ok = result.success = true
+    result.detail = `absence vérifiée après suppression (HTTP DELETE ${deleteResult.status})`
+    return result
+  }
+
+  result.deleteFailed = true
+  result.detail = verifyResult?.found === true
+    ? `la ressource ${pre.data.id} existe encore après DELETE (HTTP ${deleteResult?.status ?? 'N/A'})`
+    : `nettoyage non confirmé (DELETE HTTP ${deleteResult?.status ?? 'N/A'})`
+  return result
+}
+
+async function cleanupCreatedQr(item, token) {
+  section(`Nettoyage — ${item.publicId}`)
+
+  const before = await readQr(item.publicId, token)
+  const pre = classifyPreCheck(before, item.id)
+
+  if (!pre.safe) {
+    ko(
+      `précontrôle avant suppression ${item.publicId}`,
+      pre.reason,
+    )
+
+    manual(
+      'Nettoyage manuel requis',
+      `Vérifier dans Supabase STAGING le TAGGO public_id=${item.publicId} et id=${item.id}. Ne pas supprimer une autre ligne.`,
+    )
+
+    return
+  }
+
+  if (pre.alreadyAbsent) {
+    ok(`ressource déjà absente ${item.publicId}`)
+    return
+  }
+
+  // Filter by both the exact primary key and public_id.
+  const filter =
+    `id=eq.${encodeURIComponent(item.id)}` +
+    `&public_id=eq.${encodeURIComponent(item.publicId)}`
+
+  const deleted = await request(
+    rest(`qr_codes?${filter}`),
+    {
+      method: 'DELETE',
+      token,
+    },
+  )
+
+  const after = await readQr(item.publicId, token)
+  const outcome = classifyCleanup(deleted, after, before)
+
+  if (outcome.ok) {
+    ok(`nettoyage confirmé ${item.publicId}`, outcome.detail)
+  } else {
+    ko(`nettoyage ${item.publicId}`, outcome.detail)
+
+    manual(
+      'Nettoyage manuel requis',
+      `Contrôler uniquement la ligne id=${item.id}, public_id=${item.publicId} dans Supabase STAGING.`,
+    )
+  }
+}
+
+export function createCleanupGuard(createdResources, cleanupOne, onCleanupError) {
+  let cleanupAttempted = false
+
+  return async function runCleanup() {
+    if (cleanupAttempted) {
+      return { attempted: false, alreadyRun: true, cleaned: 0, errors: [] }
+    }
+
+    cleanupAttempted = true
+
+    const errors = []
+    let cleaned = 0
+
+    for (const item of createdResources) {
+      try {
+        await cleanupOne(item)
+        cleaned += 1
+      } catch (error) {
+        errors.push({ publicId: item?.publicId, error })
+        onCleanupError?.(item, error)
+      }
+    }
+
+    return { attempted: true, alreadyRun: false, cleaned, errors }
+  }
+}
+
+async function main() {
+  if (!SUPABASE_URL || !ANON_KEY) {
+    console.error(
+      'ERROR: VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY doivent être définis.',
+    )
+    console.error(
+      'Charge les variables publiques STAGING avant de lancer ce script.',
+    )
+
+    process.exitCode = 1
+    return
+  }
+
+  let parsedUrl
+
+  try {
+    parsedUrl = new URL(SUPABASE_URL)
+  } catch {
+    ko(
+      'URL Supabase valide',
+      'VITE_SUPABASE_URL invalide',
+    )
+    process.exitCode = 1
+    return
+  }
+
+  if (
+    parsedUrl.hostname !==
+    `${EXPECTED_PROJECT_REF}.supabase.co`
+  ) {
+    ko(
+      'garde-fou projet STAGING',
+      `URL détectée=${parsedUrl.hostname}; attendu=${EXPECTED_PROJECT_REF}.supabase.co`,
+    )
+
+    console.error(
+      'Arrêt immédiat : ce script est autorisé uniquement sur le projet STAGING attendu.',
+    )
+
+    process.exitCode = 1
+    return
+  }
+
+  section('A — Disponibilité du projet STAGING')
+
+  const health = await request(auth('settings'))
+
+  check(
+    'l’URL Supabase répond',
+    health.status === 200,
+    `HTTP ${health.status}`,
+  )
+
+  const authSettings = health
+
+  check(
+    'les paramètres Auth sont accessibles publiquement',
+    authSettings.status === 200 && Boolean(authSettings.json),
+    `HTTP ${authSettings.status}`,
+  )
+
+  const confirmationsEnabled =
+    authSettings.json?.mailer_autoconfirm === false
+
+  check(
+    'la confirmation d’email est requise',
+    confirmationsEnabled,
+    `mailer_autoconfirm=${authSettings.json?.mailer_autoconfirm}`,
+  )
+
+  check(
+    'disable_signup est false (inscription ouverte)',
+    authSettings.json?.disable_signup === false,
+    `disable_signup=${authSettings.json?.disable_signup}`,
+  )
+
+  section('B — Structure de la clé anon')
+
+  let anonPayload
+
+  try {
+    anonPayload = decodeJwt(ANON_KEY)
+  } catch (error) {
+    ko('la clé anon est un JWT décodable', error.message)
+    printSummary()
+    process.exitCode = 1
+    return
+  }
+
+  check(
+    'le JWT anon porte le rôle anon',
+    anonPayload.role === 'anon',
+    `role=${anonPayload.role}`,
+  )
+
+  check(
+    'le JWT anon correspond au projet STAGING',
+    anonPayload.ref === EXPECTED_PROJECT_REF,
+    `ref=${anonPayload.ref}`,
+  )
+
+  check(
+    'le JWT anon n’est pas expiré',
+    Number(anonPayload.exp) > Math.floor(Date.now() / 1000),
+    `exp=${anonPayload.exp}`,
+  )
+
+  section('C — Refus des accès anonymes aux données privées')
+
+
+  const privateTableChecks = [
+    {
+      label: 'lecture des profils',
+      path: 'profiles?select=id&limit=1',
+      rlsFiltered: true,
+    },
+    {
+      label: 'lecture des TAGGO privés',
+      path: 'qr_codes?select=id,owner_id&limit=1',
+      rlsFiltered: false,
+    },
+    {
+      label: 'lecture des abonnements',
+      path: 'subscriptions?select=id&limit=1',
+      rlsFiltered: false,
+    },
+    {
+      label: 'lecture des commandes',
+      path: 'orders?select=id&limit=1',
+      rlsFiltered: false,
+    },
+    {
+      label: 'lecture des scans',
+      path: 'taggo_scans?select=id&limit=1',
+      rlsFiltered: false,
+    },
+    {
+      label: 'lecture des événements email',
+      path: 'email_events?select=id&limit=1',
+      rlsFiltered: false,
+    },
+  ]
+
+  for (const { label, path, rlsFiltered } of privateTableChecks) {
+    const result = await request(rest(path))
+    const classified = {
+      ...result,
+      type: classifyResponse(result.status),
+    }
+
+    const blocked = isAnonymousAccessBlocked(
+      classified,
+      rlsFiltered,
+    )
+
+    check(
+      `${label} : accès anonyme bloqué`,
+      blocked,
+      `HTTP ${result.status}${
+        Array.isArray(result.json)
+          ? `, rows=${result.json.length}`
+          : ''
+      }`,
+    )
+  }
+
+  manual(
+    'Vérification des permissions RPC analytics',
+    'Dans Supabase STAGING, vérifier les privilèges EXECUTE effectifs de record_taggo_scan et get_taggo_scan_stats pour anon et authenticated. Ne pas appeler ces RPC directement avec un rôle anonyme.',
+  )
+
+  section('E — Tests authentifiés avec deux JWT confirmés')
+
+  const jwtA = process.env.STAGING_JWT_A
+  const jwtB = process.env.STAGING_JWT_B
+
+  if (!jwtA || !jwtB) {
+    skip(
+      'tests RLS authentifiés',
+      'STAGING_JWT_A et STAGING_JWT_B non définis',
+    )
+
+    manual(
+      'Préparer les JWT',
+      'Fournir deux access_token de comptes STAGING confirmés, distincts, dans STAGING_JWT_A et STAGING_JWT_B. Ne jamais utiliser service_role.',
+    )
+  } else {
+    let payloadA
+    let payloadB
+
+    try {
+      payloadA = decodeJwt(jwtA)
+      payloadB = decodeJwt(jwtB)
+    } catch (error) {
+      ko('JWT authentifiés décodables', error.message)
+      printSummary()
+      process.exitCode = 1
+      return
+    }
+
+    const runCleanup = createCleanupGuard(
+      createdResources,
+      item => cleanupCreatedQr(item, item.token),
+      (item, error) => {
+        failures.push(
+          `nettoyage ${item.publicId} :: erreur inattendue : ${
+            error?.message || String(error)
+          }`,
+        )
+
+        manual(
+          'Nettoyage manuel requis',
+          `Échec inattendu du nettoyage de id=${item.id}, public_id=${item.publicId}. Vérifier la ligne dans Supabase STAGING et la supprimer manuellement si elle existe toujours.`,
+        )
+      },
+    )
+
+    check(
+      'JWT A porte le rôle authenticated',
+      payloadA.role === 'authenticated',
+      `role=${payloadA.role}`,
+    )
+
+    check(
+      'JWT B porte le rôle authenticated',
+      payloadB.role === 'authenticated',
+      `role=${payloadB.role}`,
+    )
+
+    check(
+      'JWT A et B ont des sujets différents',
+      Boolean(
+        payloadA.sub &&
+        payloadB.sub &&
+        payloadA.sub !== payloadB.sub,
+      ),
+      `subA=${payloadA.sub?.slice(0, 8) ?? 'N/A'}…, subB=${payloadB.sub?.slice(0, 8) ?? 'N/A'}…`,
+    )
+
+    check(
+      'JWT A non expiré',
+      Number(payloadA.exp) > Math.floor(Date.now() / 1000),
+      `exp=${payloadA.exp}`,
+    )
+
+    check(
+      'JWT B non expiré',
+      Number(payloadB.exp) > Math.floor(Date.now() / 1000),
+      `exp=${payloadB.exp}`,
+    )
+
+    const userA = await request(auth('user'), { token: jwtA })
+    const userB = await request(auth('user'), { token: jwtB })
+
+    check(
+      'auth.getUser() valide JWT A',
+      userA.status === 200 &&
+        userA.json?.id === payloadA.sub,
+      `HTTP ${userA.status}`,
+    )
+
+    check(
+      'auth.getUser() valide JWT B',
+      userB.status === 200 &&
+        userB.json?.id === payloadB.sub,
+      `HTTP ${userB.status}`,
+    )
+
+    section('E.1 — Création d’un TAGGO de test et protection RLS')
+
+    const suffix =
+      `${Date.now().toString(36)}${cryptoRandomSuffix()}`
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '')
+        .slice(-10)
+
+    const publicId = `TGG-${suffix}`
+
+    const createQr = await request(rest('qr_codes'), {
+      method: 'POST',
+      token: jwtA,
+      body: {
+        owner_id: payloadA.sub,
+        public_id: publicId,
+        title: 'Staging validation TAGGO',
+        destination_url: 'https://staging.taggo.space/val',
+        is_public: false,
+        lifecycle_status: 'activated',
+      },
+    })
+
+    check(
+      'création du TAGGO de test autorisée au propriétaire',
+      createQr.status === 201,
+      `HTTP ${createQr.status}`,
+    )
+
+    const created = Array.isArray(createQr.json)
+      ? createQr.json[0]
+      : createQr.json
+
+    if (!created?.id || !created?.public_id) {
+      if (createQr.status === 201) {
+        ko(
+          'identifiant de TAGGO créé récupérable',
+          'HTTP 201 mais réponse sans id/public_id; ressource potentiellement orpheline, aucune suppression automatique tentée',
+        )
+
+        manual(
+          'Risque de ressource orpheline',
+          `Rechercher public_id=${publicId} dans la table qr_codes de STAGING. Ne supprimer que la ligne correspondant à cette tentative.`,
+        )
+      } else {
+        skip(
+          'tests d’écriture sur le TAGGO',
+          'la création n’a pas fourni de ligne; vérifier la politique/contrainte SQL correspondant à la réponse',
+        )
+      }
+    } else {
+      createdResources.push({
+        id: created.id,
+        publicId: created.public_id,
+        token: jwtA,
+      })
+
+      try {
+        const pid = encodeURIComponent(created.public_id)
+
+        const protectedColumns = [
+          ['lifecycle_status', 'active'],
+          ['status', 'active'],
+          ['is_public', true],
+          ['owner_id', payloadB.sub],
+        ]
+
+        const columnsToRead = [
+          'id',
+          'public_id',
+          'owner_id',
+          'lifecycle_status',
+          'status',
+          'is_public',
+        ].join(',')
+
+        for (const [column, value] of protectedColumns) {
+          const rowUrl =
+            `qr_codes?select=${columnsToRead}` +
+            `&id=eq.${encodeURIComponent(created.id)}` +
+            `&public_id=eq.${pid}`
+
+          // 1. Lire la ligne avant toute tentative.
+          const before = await request(rest(rowUrl), { token: jwtA })
+
+          const beforeOk =
+            before.status === 200 &&
+            Array.isArray(before.json) &&
+            before.json.length === 1 &&
+            before.json[0]?.id === created.id &&
+            before.json[0]?.public_id === created.public_id
+
+          if (!beforeOk) {
+            ko(
+              `protection de ${column}`,
+              `prélecture non concluante : HTTP ${before.status}; aucune tentative effectuée`,
+            )
+            continue
+          }
+
+          const beforeRow = before.json[0]
+
+          // Une tentative doit réellement chercher à changer la valeur.
+          if (Object.is(beforeRow[column], value)) {
+            ko(
+              `protection de ${column}`,
+              'test invalide : la valeur demandée est déjà présente',
+            )
+            continue
+          }
+
+          // 2. Tenter la modification avec le JWT du propriétaire.
+          const attempt = await request(rest(rowUrl), {
+            method: 'PATCH',
+            token: jwtA,
+            body: { [column]: value },
+          })
+
+          // 3. Relire la même ligne après la tentative.
+          const after = await request(rest(rowUrl), { token: jwtA })
+
+          const afterOk =
+            after.status === 200 &&
+            Array.isArray(after.json) &&
+            after.json.length === 1 &&
+            after.json[0]?.id === created.id &&
+            after.json[0]?.public_id === created.public_id
+
+          const unchanged =
+            beforeOk &&
+            afterOk &&
+            Object.is(beforeRow[column], after.json[0][column])
+
+          const protection = classifyPatchProtection(
+            attempt,
+            beforeOk,
+            afterOk,
+            unchanged,
+            QR_TRIGGER_MESSAGES,
+          )
+
+          check(
+            `écriture directe de ${column} refusée et valeur inchangée`,
+            protection.denied &&
+              protection.readsOk &&
+              protection.stateVerified,
+            [
+              `PATCH HTTP ${attempt.status}`,
+              `relecture HTTP ${after.status}`,
+              `inchangée=${unchanged}`,
+              `refus reconnu=${protection.denied}`,
+            ].join(' ; '),
+          )
+        }
+
+        const attackerRowUrl =
+          `qr_codes?select=id,owner_id,title` +
+          `&id=eq.${encodeURIComponent(created.id)}` +
+          `&public_id=eq.${pid}`
+
+        // 1. Lire le TAGGO avec le JWT du propriétaire avant la tentative.
+        const attackerBefore = await request(rest(attackerRowUrl), {
+          token: jwtA,
+        })
+
+        // 2. Tenter de modifier le titre avec le JWT d'un autre utilisateur.
+        const attackerPatch = await request(
+          rest(`qr_codes?public_id=eq.${pid}`),
+          {
+            method: 'PATCH',
+            token: jwtB,
+            body: {
+              title: 'Tentative de modification interdite',
+            },
+          },
+        )
+
+        // 3. Relire la même ligne avec le JWT du propriétaire.
+        const attackerAfter = await request(rest(attackerRowUrl), {
+          token: jwtA,
+        })
+
+        const crossUser = classifyCrossUserPatch(
+          attackerBefore,
+          attackerPatch,
+          attackerAfter,
+        )
+
+        check(
+          'un autre utilisateur ne modifie pas le TAGGO du propriétaire',
+          crossUser.denied && crossUser.stateVerified,
+          [
+            `PATCH HTTP ${attackerPatch.status}`,
+            `relecture HTTP ${attackerAfter.status}`,
+            `id/propriétaire/titre inchangés=${crossUser.stateVerified}`,
+            `refus reconnu=${crossUser.denied}`,
+          ].join(' ; '),
+        )
+
+        const ownerRead = await request(
+          rest(
+            `qr_codes?select=id,public_id,owner_id&public_id=eq.${pid}`,
+          ),
+          { token: jwtA },
+        )
+
+        check(
+          'le propriétaire peut relire son TAGGO',
+          ownerRead.status === 200 &&
+            Array.isArray(ownerRead.json) &&
+            ownerRead.json.some(row => row.id === created.id),
+          `HTTP ${ownerRead.status}`,
+        )
+
+        const attackerRead = await request(
+          rest(
+            `qr_codes?select=id,public_id,owner_id&public_id=eq.${pid}`,
+          ),
+          { token: jwtB },
+        )
+
+        check(
+          'un autre utilisateur ne voit pas le TAGGO privé',
+          attackerRead.status === 200 &&
+            Array.isArray(attackerRead.json) &&
+            attackerRead.json.length === 0,
+          `HTTP ${attackerRead.status}, rows=${
+            Array.isArray(attackerRead.json)
+              ? attackerRead.json.length
+              : '?'
+          }`,
+        )
+
+        section('E.2 — Nettoyage des seules ressources créées par ce script')
+
+        await runCleanup()
+      } finally {
+        await runCleanup()
+      }
+    }
+  }
+
+  section('F — Vérifications manuelles restantes')
+
+  manual(
+    'Validation finale',
+    'Vérifier les résultats PASS/FAIL/SKIP ci-dessus. Ce script ne prouve pas la conformité complète du schéma ni ne remplace les tests SQL locaux. Aucun db reset, db push ou migration repair n’est exécuté.',
+  )
+
+  printSummary()
+
+  process.exitCode = failed === 0 ? 0 : 1
+}
+
+function cryptoRandomSuffix() {
+  // Non-secret uniqueness helper; no external dependency required.
+  return Math.random().toString(36).slice(2, 8).toUpperCase()
+}
+
+function printSummary() {
+  console.log('\n\x1b[1m== Résumé ==\x1b[0m')
+  console.log(
+    `PASS: ${passed} | FAIL: ${failed} | SKIP: ${skipped.length} | MANUAL: ${manualSteps.length}`,
+  )
+
+  if (failures.length) {
+    console.log('\nÉchecs:')
+    for (const item of failures) {
+      console.log(` - ${item}`)
+    }
+  }
+
+  if (skipped.length) {
+    console.log('\nTests ignorés:')
+    for (const item of skipped) {
+      console.log(` - ${item}`)
+    }
+  }
+
+  if (manualSteps.length) {
+    console.log('\nÉtapes manuelles:')
+    for (const item of manualSteps) {
+      console.log(
+        ` - ${item.name}: ${item.instructions.replace(/\n/g, ' ')}`,
+      )
+    }
+  }
+}
+
+const isDirectRun =
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (isDirectRun) {
+  main().catch(error => {
+    console.error('\nErreur fatale:', error?.stack || error)
+    process.exitCode = 1
+  })
+}

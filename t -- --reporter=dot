@@ -1,0 +1,140 @@
+[1mdiff --git a/api/_lib/env.test.ts b/api/_lib/env.test.ts[m
+[1mindex 5564b9a..ed9b78f 100644[m
+[1m--- a/api/_lib/env.test.ts[m
+[1m+++ b/api/_lib/env.test.ts[m
+[36m@@ -6,6 +6,7 @@[m [mconst TEST_ENV = {[m
+   STRIPE_WEBHOOK_SECRET: 'whsec_placeholder',[m
+   SUPABASE_URL: 'https://project.supabase.co',[m
+   SUPABASE_SERVICE_ROLE_KEY: 'service-role-placeholder',[m
+[32m+[m[32m  SUPABASE_ANON_KEY: 'anon-placeholder',[m
+   APP_URL: 'https://taggo.test',[m
+ }[m
+ [m
+[36m@@ -16,6 +17,7 @@[m [mdescribe('readServerEnv', () => {[m
+       stripeWebhookSecret: 'whsec_placeholder',[m
+       supabaseUrl: 'https://project.supabase.co',[m
+       supabaseServiceRoleKey: 'service-role-placeholder',[m
+[32m+[m[32m      supabaseAnonKey: 'anon-placeholder',[m
+       appUrl: 'https://taggo.test',[m
+     })[m
+   })[m
+[1mdiff --git a/api/_lib/env.ts b/api/_lib/env.ts[m
+[1mindex f5ab516..2f7378b 100644[m
+[1m--- a/api/_lib/env.ts[m
+[1m+++ b/api/_lib/env.ts[m
+[36m@@ -13,6 +13,7 @@[m [mexport type ServerEnv = {[m
+   stripeWebhookSecret: string | undefined[m
+   supabaseUrl: string | undefined[m
+   supabaseServiceRoleKey: string | undefined[m
+[32m+[m[32m  supabaseAnonKey: string | undefined[m
+   appUrl: string | undefined[m
+   /**[m
+    * Étape 10 — Nom du provider d'emails transactionnels.[m
+[36m@@ -33,6 +34,7 @@[m [mexport function readServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn[m
+     stripeWebhookSecret: source.STRIPE_WEBHOOK_SECRET,[m
+     supabaseUrl: source.SUPABASE_URL ?? source.VITE_SUPABASE_URL,[m
+     supabaseServiceRoleKey: source.SUPABASE_SERVICE_ROLE_KEY,[m
+[32m+[m[32m    supabaseAnonKey: source.SUPABASE_ANON_KEY ?? source.VITE_SUPABASE_ANON_KEY,[m
+     appUrl: source.APP_URL,[m
+     emailProviderName: source.EMAIL_PROVIDER_NAME,[m
+     emailProviderApiKey: source.EMAIL_PROVIDER_API_KEY,[m
+[1mdiff --git a/api/_lib/orderServer.ts b/api/_lib/orderServer.ts[m
+[1mindex acfcbd9..03a8d5d 100644[m
+[1m--- a/api/_lib/orderServer.ts[m
+[1m+++ b/api/_lib/orderServer.ts[m
+[36m@@ -40,13 +40,29 @@[m [mexport async function attachStripeSession([m
+   client: SupabaseClient,[m
+   orderId: string,[m
+   sessionId: string,[m
+[32m+[m[32m  expectedUserId?: string,[m
+ ): Promise<void> {[m
+[31m-  const { error } = await client[m
+[32m+[m[32m  const { data: order, error: fetchError } = await client[m
+[32m+[m[32m    .from('orders')[m
+[32m+[m[32m    .select('id, user_id, status, stripe_checkout_session_id')[m
+[32m+[m[32m    .eq('id', orderId)[m
+[32m+[m[32m    .maybeSingle()[m
+[32m+[m
+[32m+[m[32m  if (fetchError || !order) throw new Error('order_session_link_failed')[m
+[32m+[m[32m  const row = order as { id: string; user_id: string | null; status: string; stripe_checkout_session_id: string | null }[m
+[32m+[m[32m  if (expectedUserId && row.user_id !== expectedUserId) throw new Error('order_not_owned')[m
+[32m+[m[32m  if (row.status !== 'pending') throw new Error('order_not_pending')[m
+[32m+[m[32m  if (row.stripe_checkout_session_id) throw new Error('stripe_session_already_attached')[m
+[32m+[m
+[32m+[m[32m  const { data, error } = await client[m
+     .from('orders')[m
+     .update({ stripe_checkout_session_id: sessionId, updated_at: new Date().toISOString() })[m
+     .eq('id', orderId)[m
+[32m+[m[32m    .eq('status', 'pending')[m
+[32m+[m[32m    .is('stripe_checkout_session_id', null)[m
+[32m+[m[32m    .select('id')[m
+ [m
+[31m-  if (error) throw new Error('order_session_link_failed')[m
+[32m+[m[32m  if (error || !data || (Array.isArray(data) && data.length === 0)) throw new Error('order_session_link_failed')[m
+ }[m
+ [m
+ export async function markOrderPaid([m
+[1mdiff --git a/api/_lib/supabaseAdmin.ts b/api/_lib/supabaseAdmin.ts[m
+[1mindex 5f32c4d..327aaa1 100644[m
+[1m--- a/api/_lib/supabaseAdmin.ts[m
+[1m+++ b/api/_lib/supabaseAdmin.ts[m
+[36m@@ -21,6 +21,21 @@[m [mexport function createServerSupabase(env: ServerEnv): SupabaseClient {[m
+   })[m
+ }[m
+ [m
+[32m+[m[32m/**[m
+[32m+[m[32m * Client Supabase pour les opérations utilisateur authentifiées.[m
+[32m+[m[32m * Utilise la clé publique et le JWT transmis par le navigateur.[m
+[32m+[m[32m * Ne dispose JAMAIS de la clé service_role.[m
+[32m+[m[32m */[m
+[32m+[m[32mexport function createUserSupabase(env: ServerEnv, bearerToken: string): SupabaseClient {[m
+[32m+[m[32m  if (!env.supabaseUrl || !env.supabaseAnonKey) {[m
+[32m+[m[32m    throw new Error('server_database_not_configured')[m
+[32m+[m[32m  }[m
+[32m+[m[32m  return createClient(env.supabaseUrl, env.supabaseAnonKey, {[m
+[32m+[m[32m    auth: { persistSession: false, autoRefreshToken: false },[m
+[32m+[m[32m    global: { headers: { Authorization: `Bearer ${bearerToken}` } },[m
+[32m+[m[32m  })[m
+[32m+[m[32m}[m
+[32m+[m
+ /**[m
+  * Résout l'utilisateur réel à partir du JWT fourni par le navigateur.[m
+  * Le `customerId` n'est JAMAIS lu depuis le corps de la requête.[m
+[1mdiff --git a/api/stripe/create-checkout-session.ts b/api/stripe/create-checkout-session.ts[m
+[1mindex b5d84f8..da43952 100644[m
+[1m--- a/api/stripe/create-checkout-session.ts[m
+[1m+++ b/api/stripe/create-checkout-session.ts[m
+[36m@@ -2,7 +2,7 @@[m [mimport { isServerDatabaseConfigured, isStripeConfigured, readServerEnv } from '.[m
+ import { createSupabaseCatalogLookup } from '../_lib/catalogServer'[m
+ import { createCheckoutSession, checkoutResponse } from '../_lib/checkout'[m
+ import { attachStripeSession, createShopOrder } from '../_lib/orderServer'[m
+[31m-import { createServerSupabase, extractBearerToken, resolveAuthenticatedUser } from '../_lib/supabaseAdmin'[m
+[32m+[m[32mimport { createServerSupabase, createUserSupabase, extractBearerToken, resolveAuthenticatedUser } from '../_lib/supabaseAdmin'[m
+ import { createStripeGateway } from '../_lib/stripeGateway'[m
+ import { jsonBody, resolveAppUrl } from '../_lib/http'[m
+ import { failure } from '../_lib/errors'[m
+[36m@@ -34,6 +34,13 @@[m [mexport default async function handler(req: ApiRequest): Promise<ApiResponse> {[m
+   const user = await resolveAuthenticatedUser(supabase, token)[m
+   if (!user) return failure('unauthenticated')[m
+ [m
+[32m+[m[32m  let userSupabase[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    userSupabase = createUserSupabase(env, token as string)[m
+[32m+[m[32m  } catch {[m
+[32m+[m[32m    return failure('stripe_unavailable')[m
+[32m+[m[32m  }[m
+[32m+[m
+   let stripe[m
+   try {[m
+     stripe = createStripeGateway(env.stripeSecretKey as string)[m
+[36m@@ -45,8 +52,8 @@[m [mexport default async function handler(req: ApiRequest): Promise<ApiResponse> {[m
+   const appUrl = resolveAppUrl(req, env.appUrl)[m
+   const outcome = await createCheckoutSession([m
+     {[m
+[31m-      createOrder: (orderInput) => createShopOrder(supabase, orderInput),[m
+[31m-      attachStripeSession: (orderId, sessionId) => attachStripeSession(supabase, orderId, sessionId),[m
+[32m+[m[32m      createOrder: (orderInput) => createShopOrder(userSupabase, orderInput),[m
+[32m+[m[32m      attachStripeSession: (orderId, sessionId) => attachStripeSession(supabase, orderId, sessionId, user.id),[m
+       stripe,[m
+       catalog: createSupabaseCatalogLookup(supabase),[m
+       successUrl: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,[m

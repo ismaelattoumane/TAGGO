@@ -13,6 +13,7 @@ export type ServerEnv = {
   stripeWebhookSecret: string | undefined
   supabaseUrl: string | undefined
   supabaseServiceRoleKey: string | undefined
+  supabaseAnonKey: string | undefined
   appUrl: string | undefined
   /**
    * Étape 10 — Nom du provider d'emails transactionnels.
@@ -33,6 +34,7 @@ export function readServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn
     stripeWebhookSecret: source.STRIPE_WEBHOOK_SECRET,
     supabaseUrl: source.SUPABASE_URL ?? source.VITE_SUPABASE_URL,
     supabaseServiceRoleKey: source.SUPABASE_SERVICE_ROLE_KEY,
+    supabaseAnonKey: source.SUPABASE_ANON_KEY ?? source.VITE_SUPABASE_ANON_KEY,
     appUrl: source.APP_URL,
     emailProviderName: source.EMAIL_PROVIDER_NAME,
     emailProviderApiKey: source.EMAIL_PROVIDER_API_KEY,

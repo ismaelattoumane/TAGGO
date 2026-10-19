@@ -5,7 +5,7 @@ enabled = true
 port = 54321
 
 [db]
-port = 54322
+port = 54324
 
 [studio]
 enabled = true

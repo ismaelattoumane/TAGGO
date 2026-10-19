@@ -40,13 +40,29 @@ export async function attachStripeSession(
   client: SupabaseClient,
   orderId: string,
   sessionId: string,
+  expectedUserId: string,
 ): Promise<void> {
-  const { error } = await client
+  const { data: order, error: fetchError } = await client
+    .from('orders')
+    .select('id, user_id, status, stripe_checkout_session_id')
+    .eq('id', orderId)
+    .maybeSingle()
+
+  if (fetchError || !order) throw new Error('order_session_link_failed')
+  const row = order as { id: string; user_id: string | null; status: string; stripe_checkout_session_id: string | null }
+  if (row.user_id !== expectedUserId) throw new Error('order_not_owned')
+  if (row.status !== 'pending') throw new Error('order_not_pending')
+  if (row.stripe_checkout_session_id) throw new Error('stripe_session_already_attached')
+
+  const { data, error } = await client
     .from('orders')
     .update({ stripe_checkout_session_id: sessionId, updated_at: new Date().toISOString() })
     .eq('id', orderId)
+    .eq('status', 'pending')
+    .is('stripe_checkout_session_id', null)
+    .select('id')
 
-  if (error) throw new Error('order_session_link_failed')
+  if (error || !data || (Array.isArray(data) && data.length === 0)) throw new Error('order_session_link_failed')
 }
 
 export async function markOrderPaid(
