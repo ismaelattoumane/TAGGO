@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { recordCurrentAppPath } from './lib/navigation'
@@ -28,6 +29,7 @@ function App() {
           TAGGO
         </div>
         <Outlet />
+        <Analytics />
       </CartProvider>
     </AuthProvider>
   )

@@ -1,0 +1,42 @@
+/* Écran de chargement TAGGO (logomark animé). Contraste : crème sur marine 14,8:1. */
+.tg-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--taggo-navy, #0b1320);
+  color: var(--taggo-background, #f5e1da);
+  transition: opacity 0.6s, visibility 0.6s;
+  animation: tg-intro-auto 0.4s 8s forwards; /* filet de sécurité 100 % CSS */
+}
+.tg-intro--out { opacity: 0; visibility: hidden; }
+.tg-intro__mark { width: min(34vw, 150px); height: auto; overflow: visible; }
+.tg-intro__mark path { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.tg-intro__frame path { animation: tg-intro-frame 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: calc(var(--i) * 80ms); }
+.tg-intro__pixels path { animation: tg-intro-pixel 0.28s ease-out forwards; animation-delay: var(--d); }
+.tg-intro__scan { fill: var(--taggo-highlight, #f4c95d); opacity: 0; animation: tg-intro-scan 1s ease-in-out 1.25s 1 forwards; }
+.tg-intro__tag {
+  margin: 1.6rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #d6a7b2;
+  opacity: 0;
+  animation: tg-intro-pixel 0.5s 1.5s forwards;
+}
+.tg-intro--quick *, .tg-intro--quick { animation-duration: 0s !important; animation-delay: 0s !important; }
+.tg-intro--quick .tg-intro__mark path, .tg-intro--quick .tg-intro__tag { opacity: 1; transform: none; }
+.tg-intro--quick .tg-intro__scan { display: none; }
+@keyframes tg-intro-frame { from { opacity: 0; transform: scale(1.4); } to { opacity: 1; transform: none; } }
+@keyframes tg-intro-pixel { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: none; } }
+@keyframes tg-intro-scan { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(128px); } }
+@keyframes tg-intro-auto { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) {
+  .tg-intro *, .tg-intro__tag { animation: none !important; }
+  .tg-intro__mark path, .tg-intro__tag { opacity: 1; transform: none; }
+  .tg-intro__scan { display: none; }
+}

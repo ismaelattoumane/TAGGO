@@ -1,0 +1,17 @@
+.taggo-product-faces { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 1.4rem; margin-top: 2rem; }
+.taggo-product-face {
+  margin: 0;
+  padding: 1.4rem;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--taggo-navy, #0b1320);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(43, 45, 66, 0.12);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.taggo-product-face figcaption { font-size: 1.2rem; font-weight: 700; }
+.taggo-product-face img { display: block; width: min(100%, 220px); height: auto; margin: 1rem auto; transition: transform 0.35s; }
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .taggo-product-face:hover { transform: translateY(-6px); box-shadow: 0 34px 70px rgba(43, 45, 66, 0.22); }
+  .taggo-product-face:hover img { transform: scale(1.03); }
+}
