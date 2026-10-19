@@ -57,9 +57,9 @@ describe('static SEO configuration', () => {
     }
   })
 
-  it('never declares a sitemap URL while the public domain is unknown', () => {
-    // Le domaine n'est pas connu : aucune URL absolue n'est inventée.
-    expect(robotsTxt).not.toMatch(/^Sitemap:\s*https?:\/\//m)
+  it('declares the sitemap of the public domain', () => {
+    // Le domaine public est connu : robots.txt pointe vers le sitemap statique.
+    expect(robotsTxt).toMatch(/^Sitemap:\s*https:\/\/taggo\.space\/sitemap\.xml$/m)
   })
 
   it('documents the limitation: the app is a client-rendered SPA', () => {

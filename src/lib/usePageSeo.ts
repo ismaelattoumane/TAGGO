@@ -78,15 +78,27 @@ export function usePageSeo({
     robotsMeta.content = noindex ? DEFAULT_ROBOTS : 'index, follow'
 
     let canonical: HTMLLinkElement | null = null
+    /** Vrai si le <link> a été créé par ce hook (et doit donc être supprimé au démontage). */
+    let canonicalCreated = false
+    /** Href du <link> repris de `index.html`, restauré au démontage. */
+    let previousCanonicalHref: string | null = null
     const canonicalUrl = canonicalPath ? buildCanonicalUrl(canonicalPath) : null
 
     if (canonicalUrl) {
-      canonical = document.getElementById(CANONICAL_LINK_ID) as HTMLLinkElement | null
+      // `index.html` sert toutes les routes de la SPA : il porte déjà un <link rel="canonical">
+      // on le réutilise au lieu d'en ajouter un second (deux canonical divergents sont ignorés
+      // par les moteurs de recherche).
+      canonical =
+        (document.getElementById(CANONICAL_LINK_ID) as HTMLLinkElement | null) ??
+        document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
       if (!canonical) {
         canonical = document.createElement('link')
         canonical.id = CANONICAL_LINK_ID
         canonical.rel = 'canonical'
         document.head.appendChild(canonical)
+        canonicalCreated = true
+      } else {
+        previousCanonicalHref = canonical.getAttribute('href')
       }
       canonical.href = canonicalUrl
     }
@@ -123,7 +135,11 @@ export function usePageSeo({
       document.title = previousTitle
       descriptionMeta.content = previousDescription
       robotsMeta.content = previousRobots
-      if (canonical && canonicalPath) canonical.remove()
+      if (canonical && canonicalPath) {
+        if (canonicalCreated) canonical.remove()
+        else if (previousCanonicalHref === null) canonical.removeAttribute('href')
+        else canonical.setAttribute('href', previousCanonicalHref)
+      }
       previousSocial.forEach(({ meta, previous }) => {
         if (createdMetas.includes(meta)) meta.remove()
         else meta.content = previous
