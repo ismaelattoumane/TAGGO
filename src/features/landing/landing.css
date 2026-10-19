@@ -8,33 +8,6 @@
   z-index: 10;
 }
 
-/* ---- Section empilée ----
-   Les sections de la landing sont collantes (`position: sticky`) et se recouvrent :
-   chacune occupe un écran, repose sur un fond opaque (pour masquer la précédente)
-   et centre son contenu. Seule la couleur de fond est forcée — les dégradés propres
-   à chaque section (background-image) restent visibles. */
-.taggo-landing-section {
-  display: grid;
-  align-content: center;
-  min-height: 100svh;
-  padding-block: 4rem;
-  background-color: var(--taggo-background, #f5e1da);
-}
-
-/* Si le contenu d'une section dépasse la hauteur de l'écran, `safe` évite que
-   son haut soit rogné (un contenu rogné n'est plus atteignable au scroll). */
-@supports (align-content: safe center) {
-  .taggo-landing-section {
-    align-content: safe center;
-  }
-}
-
-@media (min-width: 768px) {
-  .taggo-landing-section {
-    padding-block: 6rem;
-  }
-}
-
 /* ---- Scroll reveal (IntersectionObserver driven) ---- */
 .taggo-reveal {
   opacity: 0;
