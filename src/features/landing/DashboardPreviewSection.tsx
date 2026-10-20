@@ -10,30 +10,34 @@ export function DashboardPreviewSection() {
   return (
     <section
       id="dashboard"
-      className="taggo-landing-section taggo-dash-section"
+      className="taggo-landing-section taggo-landing-section--panel taggo-dash-section"
       aria-labelledby="dash-heading"
     >
       <Container size="lg">
-        <div className="taggo-dash-header">
-          <Reveal>
-            <span className="taggo-eyebrow">Tableau de bord</span>
-          </Reveal>
-          <Reveal delay={100}>
-            <h2 id="dash-heading" className="taggo-landing-heading">
-              Tout contrôler depuis un seul endroit.
-            </h2>
-          </Reveal>
+        <div className="taggo-landing-grid-2">
           <Reveal delay={200}>
-            <p className="taggo-landing-subheading taggo-landing-subheading--center">
-              Suis tes scans, modifie ta destination, gère tes paramètres et ton QR,
-              depuis un seul endroit.
-            </p>
+            <div className="taggo-dash-preview">
+              <PhoneCard variant="dashboard" />
+            </div>
           </Reveal>
-        </div>
 
-        <Reveal delay={200}>
-          <PhoneCard variant="dashboard" />
-        </Reveal>
+          <div>
+            <Reveal>
+              <span className="taggo-eyebrow">Tableau de bord</span>
+            </Reveal>
+            <Reveal delay={100}>
+              <h2 id="dash-heading" className="taggo-landing-heading">
+                Tout contrôler depuis un seul endroit.
+              </h2>
+            </Reveal>
+            <Reveal delay={200}>
+              <p className="taggo-landing-subheading">
+                Suis tes scans, modifie ta destination, gère tes paramètres et ton
+                QR, depuis un seul endroit. (Données d'exemple.)
+              </p>
+            </Reveal>
+          </div>
+        </div>
       </Container>
     </section>
   )

@@ -6,7 +6,7 @@ const BASE_URL = (import.meta.env.BASE_URL ?? '').replace(/\/+$/, '')
 
 /**
  * TAGGO Concept — explains the product in seconds.
- * Visual: QR → T-shirt → digital profile (static, no 3D).
+ * Visual: le QR code réel (dos du T-shirt) scanned vers le profil TAGGO.
  */
 export function ConceptSection() {
   return (
@@ -35,25 +35,10 @@ export function ConceptSection() {
               </p>
             </Reveal>
             <Reveal delay={300}>
-              <ul className="taggo-concept-list">
-                <li className="taggo-concept-list__item">
-                  <span className="taggo-concept-list__icon" aria-hidden="true">
-                    ◈
-                  </span>
-                  Un QR code unique, relié à ton profil
-                </li>
-                <li className="taggo-concept-list__item">
-                  <span className="taggo-concept-list__icon" aria-hidden="true">
-                    ◈
-                  </span>
-                  Une page publique personnalisable à l'infini
-                </li>
-                <li className="taggo-concept-list__item">
-                  <span className="taggo-concept-list__icon" aria-hidden="true">
-                    ◈
-                  </span>
-                  Aucune application à installer pour scanner
-                </li>
+              <ul className="taggo-landing-ticks">
+                <li>Un QR code unique, relié à ton profil</li>
+                <li>Une page publique personnalisable à l'infini</li>
+                <li>Aucune application à installer pour scanner</li>
               </ul>
             </Reveal>
           </div>

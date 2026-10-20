@@ -41,8 +41,38 @@
     <meta name="twitter:description" content="TAGGO transforme ton T-shirt en identité numérique grâce à un QR code personnalisé." />
     <meta name="twitter:image" content="https://taggo.space/android-chrome-512x512.png" />
     <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://taggo.space/#organization","name":"TAGGO","url":"https://taggo.space/","logo":"https://taggo.space/android-chrome-512x512.png","slogan":"Le vêtement qui connecte.","description":"Vêtements connectés : un QR code intégré au T-shirt donne accès à une identité numérique personnalisable.","contactPoint":{"@type":"ContactPoint","contactType":"customer support","email":"support-taggo@protonmail.com","availableLanguage":"fr"}},{"@type":"WebSite","@id":"https://taggo.space/#website","url":"https://taggo.space/","name":"TAGGO","inLanguage":"fr-FR","publisher":{"@id":"https://taggo.space/#organization"}}]}</script>
+    <style>
+      /* Écran de chargement statique (première peinture). */
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background: #0b1320;
+        color: #f5e1da;
+        font: 700 1.5rem/1 'Avenir Next', Avenir, 'Segoe UI', sans-serif;
+        letter-spacing: 0.04em;
+        animation: boot-auto 0.5s 6s forwards;
+      }
+      @keyframes boot-auto {
+        to {
+          opacity: 0;
+          visibility: hidden;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot {
+          animation-delay: 1s;
+        }
+      }
+    </style>
   </head>
   <body>
+    <!-- Écran de chargement : visible dès le premier rendu (avant même le JS),
+         retiré par l'application dès qu'elle est montée. Filet de sécurité CSS
+         si le JavaScript ne se charge pas. -->
+    <div id="boot" aria-hidden="true">TAGGO</div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

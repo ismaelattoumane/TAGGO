@@ -11,7 +11,7 @@ export function FaqSection() {
   return (
     <section
       id="faq"
-      className="taggo-landing-section taggo-landing-section--solid taggo-faq-section"
+      className="taggo-landing-section taggo-landing-section--panel taggo-faq-section"
       aria-labelledby="faq-heading"
     >
       <Container size="md">
@@ -33,7 +33,7 @@ export function FaqSection() {
         </Reveal>
 
         <Reveal delay={300}>
-          <p className="taggo-faq-header">
+          <p className="taggo-faq-footer">
             <a className="taggo-button taggo-button--ghost" href="/faq">
               Voir toutes les questions
             </a>

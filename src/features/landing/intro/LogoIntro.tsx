@@ -3,52 +3,31 @@ import { prefersReducedMotion } from '../../three/device'
 import { FRAME_PATHS, LOGOMARK_VIEWBOX, PIXEL_PATHS } from './logomarkPaths'
 import './LogoIntro.css'
 
-const SEEN_KEY = 'taggo:intro-seen'
-const MIN_FIRST_MS = 2300
-const MIN_SEEN_MS = 250
+const MIN_FIRST_MS = 1400
 const MIN_REDUCED_MS = 600
 const SAFETY_MS = 9000
 const FADE_MS = 700
 
-function readSeen(): boolean {
-  try {
-    return window.sessionStorage.getItem(SEEN_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function markSeen(): void {
-  try {
-    window.sessionStorage.setItem(SEEN_KEY, '1')
-  } catch {
-    /* stockage indisponible : on ignore */
-  }
-}
-
 /**
  * Écran de chargement : le logomark TAGGO se construit (cadre, puis diagonale pixel par pixel,
- * puis balayage de scan). Il se ferme quand le T-shirt 3D est prêt (`ready`), jamais avant
- * 2,3 s à la première visite, presque instantanément ensuite. Une minuterie de sécurité
- * garantit qu’il ne bloque jamais la page.
+ * puis balayage de scan). Il se ferme quand TOUT est chargé (page + T-shirt 3D) et se
+ * réaffiche à chaque rechargement de la page.
  */
 export function LogoIntro({ ready }: { ready: boolean }) {
-  const [seen] = useState(readSeen)
   const [out, setOut] = useState(false)
   const [gone, setGone] = useState(false)
 
   useEffect(() => {
-    markSeen()
     const safety = window.setTimeout(() => setOut(true), SAFETY_MS)
     return () => window.clearTimeout(safety)
   }, [])
 
   useEffect(() => {
     if (!ready) return undefined
-    const minimum = seen ? MIN_SEEN_MS : prefersReducedMotion() ? MIN_REDUCED_MS : MIN_FIRST_MS
+    const minimum = prefersReducedMotion() ? MIN_REDUCED_MS : MIN_FIRST_MS
     const timer = window.setTimeout(() => setOut(true), Math.max(0, minimum - performance.now()))
     return () => window.clearTimeout(timer)
-  }, [ready, seen])
+  }, [ready])
 
   useEffect(() => {
     if (!out) return undefined
@@ -60,7 +39,7 @@ export function LogoIntro({ ready }: { ready: boolean }) {
 
   return (
     <div
-      className={`tg-intro${out ? ' tg-intro--out' : ''}${seen ? ' tg-intro--quick' : ''}`}
+      className={`tg-intro${out ? ' tg-intro--out' : ''}`}
       role="status"
       aria-label="Chargement de TAGGO"
     >

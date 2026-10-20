@@ -1,11 +1,180 @@
 /* ============================================================
-   TAGGO Landing — shared section primitives
+   TAGGO Landing — primitives partagées
+   Palette de référence : marine #0B1320 · crème #F5E1DA ·
+   violet #6F2DA8 · rose #B56576 · jaune #F4C95D · cyan #4CC9F0
    ============================================================ */
 
-/* ---- Landing shell ---- */
+:root {
+  --taggo-rose-ink: #9a4358;
+}
+
+/* ---- Coquille ---- */
 .taggo-landing {
   position: relative;
   z-index: 10;
+  background: var(--taggo-navy);
+}
+
+/* ---- Sections empilées ----
+   Chaque section repose sur un fond opaque (pour masquer la précédente),
+   alterne crème / panel clair et centre un contenu large. */
+.taggo-landing-section {
+  padding: clamp(4rem, 9vw, 7rem) clamp(1.2rem, 6vw, 6rem);
+  background: var(--taggo-background);
+  color: var(--taggo-ink);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+/* Variante claire : alterne avec la crème. */
+.taggo-landing-section--panel {
+  background: var(--panel);
+}
+
+/* Variante sombre : CTA final. */
+.taggo-landing-section--dark {
+  background: var(--taggo-navy);
+  color: var(--taggo-background);
+}
+
+.taggo-landing-section > .taggo-container {
+  max-width: 1100px;
+  padding-inline: 0;
+}
+
+/* ---- Titres ---- */
+.taggo-landing-heading {
+  margin: 0 0 1.2rem;
+  font-size: clamp(1.8rem, 4.2vw, 3rem);
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: inherit;
+  text-wrap: balance;
+}
+
+.taggo-landing-subheading {
+  max-width: 56ch;
+  margin: 0 0 1.4rem;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--taggo-muted);
+}
+
+.taggo-landing-subheading--center {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.taggo-eyebrow {
+  display: block;
+  margin: 0 0 0.6rem;
+  color: var(--taggo-rose-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+/* ---- Grilles ---- */
+.taggo-landing-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: center;
+}
+
+.taggo-landing-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.6rem;
+  margin-top: 2.4rem;
+}
+
+.taggo-landing-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
+  margin-top: 2.4rem;
+}
+
+/* ---- Boutons ----
+   Sur fond clair : bouton violet plein, variante « outline » à l'encre. */
+.taggo-landing-section :focus-visible {
+  outline-color: var(--taggo-primary);
+}
+
+.taggo-landing-section .taggo-button {
+  border-radius: 999px;
+  padding: 0.85rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.taggo-landing-section .taggo-button--primary {
+  background: var(--taggo-primary);
+  color: #fff;
+}
+
+.taggo-landing-section .taggo-button--ghost {
+  background: none;
+  color: var(--taggo-ink);
+  box-shadow: inset 0 0 0 1.5px var(--taggo-ink);
+}
+
+.taggo-landing-section--dark .taggo-button--primary {
+  background: var(--taggo-highlight);
+  color: var(--taggo-navy);
+}
+
+.taggo-landing-section--dark .taggo-button--ghost {
+  color: var(--taggo-background);
+  box-shadow: inset 0 0 0 1.5px var(--taggo-background);
+}
+
+/* ---- Listes éditoriales (ticks) ---- */
+.taggo-landing-ticks {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.6rem;
+}
+
+.taggo-landing-ticks > li {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(43, 45, 66, 0.16);
+  transition: border-color 0.3s, padding-left 0.3s;
+}
+
+.taggo-landing-ticks > li:hover {
+  border-bottom-color: var(--taggo-accent);
+  padding-left: 0.5rem;
+}
+
+.taggo-landing-ticks b {
+  display: block;
+  font-weight: 700;
+}
+
+.taggo-landing-ticks span {
+  color: var(--taggo-muted);
+  font-size: 0.95rem;
+}
+
+/* ---- Lien d'évitement ---- */
+.taggo-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+
+.taggo-skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: var(--taggo-highlight);
+  color: var(--taggo-navy);
+  font-weight: 700;
 }
 
 /* ---- Scroll reveal (IntersectionObserver driven) ---- */
@@ -27,75 +196,6 @@
     opacity: 1;
     transform: none;
     transition: none;
-  }
-}
-
-/* ---- Section heading ---- */
-.taggo-landing-heading {
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
-  line-height: var(--leading-tight);
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.taggo-landing-subheading {
-  margin-top: var(--space-3);
-  font-size: var(--text-body);
-  line-height: var(--leading-relaxed);
-  color: var(--color-text-muted);
-  max-width: 60ch;
-}
-
-.taggo-landing-subheading--center {
-  margin-inline: auto;
-}
-
-/* ---- Two-column grid ---- */
-.taggo-landing-grid-2 {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-  align-items: center;
-}
-
-@media (min-width: 1025px) {
-  .taggo-landing-grid-2 {
-    grid-template-columns: 1fr 1fr;
-    gap: 3.5rem;
-  }
-}
-
-/* ---- Three-column grid ---- */
-.taggo-landing-grid-3 {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .taggo-landing-grid-3 {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;
-  }
-}
-
-/* ---- Four-column grid ---- */
-.taggo-landing-grid-4 {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .taggo-landing-grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1025px) {
-  .taggo-landing-grid-4 {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2rem;
   }
 }
 

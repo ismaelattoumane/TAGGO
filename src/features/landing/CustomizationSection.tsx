@@ -14,7 +14,7 @@ const FEATURES = [
   },
   {
     title: 'Bio & texte',
-    description: 'Décris-toi en quelques mots. Change ton message à tout moment.',
+    description: 'Change ton message à tout moment.',
   },
   {
     title: 'Destination',
@@ -59,19 +59,14 @@ export function CustomizationSection() {
               </p>
             </Reveal>
             <Reveal delay={300}>
-              <div className="taggo-custom-features">
+              <ul className="taggo-landing-ticks">
                 {FEATURES.map((feature) => (
-                  <div key={feature.title} className="taggo-custom-feature">
-                    <span className="taggo-custom-feature__dot" aria-hidden="true" />
-                    <div>
-                      <p className="taggo-custom-feature__title">{feature.title}</p>
-                      <p className="taggo-custom-feature__desc">
-                        {feature.description}
-                      </p>
-                    </div>
-                  </div>
+                  <li key={feature.title}>
+                    <b>{feature.title}</b>
+                    <span>{feature.description}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </Reveal>
             <Reveal delay={400}>
               <a className="taggo-button taggo-button--ghost taggo-custom-cta" href="#how-it-works">

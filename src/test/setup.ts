@@ -25,3 +25,20 @@ if (typeof globalThis.IntersectionObserver === 'undefined') {
   globalThis.IntersectionObserver =
     IntersectionObserverStub as unknown as typeof globalThis.IntersectionObserver
 }
+
+/**
+ * jsdom n'implémente pas `matchMedia` : le code l'utilise pour détecter
+ * `prefers-reduced-motion` (hero 3D, écran de chargement, favicon animée).
+ */
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => undefined,
+    removeListener: () => undefined,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia
+}

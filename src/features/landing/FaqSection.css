@@ -1,20 +1,71 @@
 /* ---------- TAGGO FAQ (section landing) ---------- */
 
-.taggo-faq-section {
-  background: linear-gradient(
-    180deg,
-    rgba(111, 45, 168, 0.03) 0%,
-    transparent 100%
-  );
+.taggo-faq-section > .taggo-container--md {
+  max-width: 780px;
 }
 
 .taggo-faq-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
+  margin: 0 0 1.6rem;
 }
 
-@media (min-width: 768px) {
-  .taggo-faq-header {
-    margin-bottom: 3.5rem;
-  }
+.taggo-faq-list {
+  display: block;
+}
+
+/* ---- Accordéon éditorial : lignes pleines, pas de carte ---- */
+.taggo-faq-section .taggo-faq-item {
+  border: 0;
+  border-top: 1px solid rgba(43, 45, 66, 0.18);
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+  transition: background-color 0.2s;
+}
+
+.taggo-faq-section .taggo-faq-item:last-child {
+  border-bottom: 1px solid rgba(43, 45, 66, 0.18);
+}
+
+.taggo-faq-section .taggo-faq-item:hover {
+  background: rgba(111, 45, 168, 0.05);
+}
+
+.taggo-faq-section .taggo-faq-item__button {
+  padding: 1.05rem 0;
+}
+
+.taggo-faq-section .taggo-faq-item__text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--taggo-ink);
+  transition: color 0.2s;
+}
+
+.taggo-faq-section .taggo-faq-item__button:hover .taggo-faq-item__text {
+  color: var(--taggo-primary);
+}
+
+.taggo-faq-section .taggo-faq-item__icon {
+  width: auto;
+  height: auto;
+  background: none;
+  color: var(--taggo-rose-ink);
+  font-size: 1.4rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.taggo-faq-section .taggo-faq-item--open .taggo-faq-item__icon {
+  background: none;
+  color: var(--taggo-rose-ink);
+}
+
+.taggo-faq-section .taggo-faq-item__panel {
+  padding: 0 0 0.9rem;
+}
+
+.taggo-faq-section .taggo-faq-item__answer {
+  max-width: 62ch;
+  margin: 0.7rem 0 0;
+  color: var(--taggo-muted);
 }

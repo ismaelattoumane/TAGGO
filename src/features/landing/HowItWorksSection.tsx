@@ -40,7 +40,7 @@ export function HowItWorksSection() {
   return (
     <section
       id="how-it-works"
-      className="taggo-landing-section taggo-hiw-section"
+      className="taggo-landing-section taggo-landing-section--panel taggo-hiw-section"
       aria-labelledby="hiw-heading"
     >
       <Container size="lg">

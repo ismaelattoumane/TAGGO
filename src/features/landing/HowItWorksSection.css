@@ -1,70 +1,46 @@
 /* ---------- TAGGO How It Works ---------- */
 
-.taggo-hiw-section {
-  background: transparent;
-}
-
 .taggo-hiw-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-}
-
-@media (min-width: 768px) {
-  .taggo-hiw-header {
-    margin-bottom: 3.5rem;
-  }
+  margin: 0;
 }
 
 .taggo-hiw-grid {
-  text-align: center;
+  list-style: none;
+  padding: 0;
 }
 
 .taggo-hiw-card {
-  position: relative;
-  padding: 1.75rem 1.5rem;
-  border-radius: var(--radius-xl);
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border);
-  height: 100%;
+  border-top: 2px solid var(--taggo-accent);
+  padding-top: 1rem;
+  transition: transform 0.3s, border-color 0.3s;
+}
+
+.taggo-hiw-card:hover {
+  border-top-color: var(--taggo-primary);
+  transform: translateY(-4px);
 }
 
 .taggo-hiw-card__number {
   display: block;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--color-primary);
-  opacity: 0.6;
-  margin-bottom: 0.5rem;
+  color: var(--taggo-rose-ink);
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
 .taggo-hiw-card__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: var(--radius-full);
-  background: linear-gradient(
-    135deg,
-    rgba(111, 45, 168, 0.08),
-    rgba(181, 101, 118, 0.08)
-  );
-  font-size: 1.1rem;
-  color: var(--color-primary);
-  margin-bottom: var(--space-4);
+  display: none;
 }
 
 .taggo-hiw-card__title {
-  font-size: var(--text-h3);
+  margin: 0.3rem 0 0;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 var(--space-2);
+  color: var(--taggo-ink);
 }
 
 .taggo-hiw-card__description {
-  font-size: var(--text-body-sm);
-  line-height: var(--leading-relaxed);
-  color: var(--color-text-muted);
   margin: 0;
+  color: var(--taggo-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
 }

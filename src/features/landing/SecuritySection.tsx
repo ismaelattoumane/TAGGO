@@ -32,7 +32,7 @@ export function SecuritySection() {
   return (
     <section
       id="security"
-      className="taggo-landing-section taggo-security-section"
+      className="taggo-landing-section taggo-landing-section--panel taggo-security-section"
       aria-labelledby="security-heading"
     >
       <Container size="lg">

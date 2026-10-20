@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useRef, useState, type RefObject } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isWebGlSupported, prefersReducedMotion } from '../../three/device'
 import { DevicePanels } from './DevicePanels'
@@ -18,27 +18,6 @@ function resolveMode(): Mode {
   return prefersReducedMotion() ? 'still' : 'full'
 }
 
-/** Expose la hauteur de l’en-tête sticky du site (le hero se colle juste en dessous). */
-function useHeaderOffset(rootRef: RefObject<HTMLElement | null>, onChange: () => void): void {
-  useEffect(() => {
-    const root = rootRef.current
-    if (!root) return undefined
-    const header = document.querySelector<HTMLElement>('.taggo-landing-header')
-    const apply = (): void => {
-      root.style.setProperty('--tg-header-h', `${header?.offsetHeight ?? 0}px`)
-      onChange()
-    }
-    apply()
-    window.addEventListener('resize', apply, { passive: true })
-    const observer = header && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(apply) : null
-    if (header) observer?.observe(header)
-    return () => {
-      window.removeEventListener('resize', apply)
-      observer?.disconnect()
-    }
-  }, [rootRef, onChange])
-}
-
 type StoryExperienceProps = {
   /** Appelé quand le T-shirt est prêt (ou immédiatement sans WebGL) : ferme l’écran de chargement. */
   onReady?: () => void
@@ -51,8 +30,6 @@ export function StoryExperience({ onReady }: StoryExperienceProps) {
   const [mode] = useState<Mode>(resolveMode)
   const full = mode === 'full'
   const ctrl = useScrollProgress(heroRef, stageRef, full)
-
-  useHeaderOffset(heroRef, ctrl.remeasure)
 
   useEffect(() => {
     if (mode === 'static') onReady?.()

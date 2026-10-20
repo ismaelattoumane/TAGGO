@@ -23,11 +23,10 @@ export function useStackedSections(rootRef: RefObject<HTMLElement | null>): void
     const headerHeight = (): number => document.querySelector<HTMLElement>(HEADER_SELECTOR)?.offsetHeight ?? 0
 
     const fit = (): void => {
-      const header = headerHeight()
       sections().forEach((section, index) => {
         section.style.zIndex = String(index + 2)
         // Plus haute que l’écran : elle se colle quand son bas atteint le bas de l’écran.
-        section.style.top = `${Math.min(header, window.innerHeight - section.offsetHeight)}px`
+        section.style.top = `${Math.min(0, window.innerHeight - section.offsetHeight)}px`
         if (!section.dataset.tgStacked) {
           section.dataset.tgStacked = '1'
           if (getComputedStyle(section).backgroundColor === 'rgba(0, 0, 0, 0)') {

@@ -11,6 +11,94 @@
   transition: border-color var(--transition-fast);
 }
 
+/* ---- Variante overlay (landing) ----
+   En-tête fixe, posé sur le hero marine : fond sombre translucide, filets
+   crème, logo crème (masque SVG) et CTA jaune. */
+.taggo-landing-header--overlay {
+  position: fixed;
+  inset: 0 0 auto 0;
+  background: rgba(11, 19, 32, 0.84);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(245, 225, 218, 0.18);
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__inner {
+  padding: calc(env(safe-area-inset-top, 0px) + 0.9rem) 1.4rem 0.9rem;
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__logo-img {
+  background-color: var(--taggo-background);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__nav-link {
+  position: relative;
+  color: rgba(245, 225, 218, 0.85);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s;
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__nav-link:hover,
+.taggo-landing-header--overlay .taggo-landing-header__nav-link:focus-visible {
+  color: var(--taggo-highlight);
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__nav-link:hover::after,
+.taggo-landing-header--overlay .taggo-landing-header__nav-link:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__cta {
+  background: var(--taggo-highlight);
+  color: var(--taggo-navy);
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__burger-bar {
+  background: var(--taggo-background);
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__mobile {
+  background: rgba(11, 19, 32, 0.97);
+  border-top: 1px solid rgba(245, 225, 218, 0.18);
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__mobile-link {
+  color: var(--taggo-background);
+  border-bottom: 1px solid rgba(245, 225, 218, 0.14);
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__mobile-link:hover {
+  color: var(--taggo-highlight);
+}
+
+.taggo-landing-header--overlay .taggo-landing-header__badge {
+  background: var(--taggo-highlight);
+  color: var(--taggo-navy);
+}
+
 .taggo-landing-header__inner {
   display: flex;
   align-items: center;

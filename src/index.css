@@ -790,3 +790,56 @@ svg {
     font-size: 1.6rem;
   }
 }
+
+/* ============================================================
+   Identité TAGGO — sélection, curseur et barre de défilement
+   (reprise de la page TAGGO de référence)
+   ============================================================ */
+
+:root {
+  accent-color: #6f2da8;
+  caret-color: #f4c95d;
+}
+
+html {
+  -webkit-tap-highlight-color: rgba(111, 45, 168, 0.28);
+}
+
+.taggo-landing ::selection,
+.taggo-landing-header ::selection,
+.taggo-landing-footer ::selection {
+  background: #f4c95d;
+  color: #0b1320;
+}
+
+.taggo-landing-section ::selection {
+  background: #6f2da8;
+  color: #f5e1da;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: #0b1320;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(#6f2da8, #b56576);
+  border-radius: 999px;
+  border: 3px solid #0b1320;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(#f4c95d, #b56576);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-color: #6f2da8 #0b1320;
+    scrollbar-width: thin;
+  }
+}

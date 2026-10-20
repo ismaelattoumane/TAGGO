@@ -2,20 +2,19 @@ import { Link } from 'react-router-dom'
 import { Container } from '../../components/ui/Layout/Layout'
 import { Reveal } from './Reveal'
 import './FinalCtaSection.css'
-import './PhoneCard.css'
 
 /**
- * TAGGO Final CTA — strong visual presence, premium feel.
+ * TAGGO Final CTA — bandeau sombre qui clôt la landing.
  */
 export function FinalCtaSection() {
   return (
     <section
       id="final-cta"
-      className="taggo-landing-section taggo-landing-section--solid taggo-finalcta-section"
+      className="taggo-landing-section taggo-landing-section--dark taggo-finalcta-section"
       aria-labelledby="finalcta-heading"
     >
       <Container size="md">
-        <div className="taggo-finalcta-card">
+        <div className="taggo-finalcta-inner">
           <Reveal>
             <h2 id="finalcta-heading" className="taggo-finalcta-heading">
               Prêt à créer ton TAGGO ?

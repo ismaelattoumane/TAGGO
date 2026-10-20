@@ -6,6 +6,7 @@ import { LandingStructuredData } from './LandingStructuredData'
 import { StackedSections } from './StackedSections'
 import { StoryExperience } from './experience/StoryExperience'
 import { LogoIntro } from './intro/LogoIntro'
+import { usePageLoaded } from './intro/usePageLoaded'
 import { ConceptSection } from './ConceptSection'
 import { HowItWorksSection } from './HowItWorksSection'
 import { CustomizationSection } from './CustomizationSection'
@@ -28,14 +29,18 @@ const DESCRIPTION = 'TAGGO transforme ton T-shirt en identité numérique grâce
 export function LandingPage() {
   const [shirtReady, setShirtReady] = useState(false)
   const handleReady = useCallback(() => setShirtReady(true), [])
+  const pageLoaded = usePageLoaded()
 
   usePageSeo({ title: TITLE, description: DESCRIPTION, canonicalPath: '/' })
 
   return (
     <>
-      <LogoIntro ready={shirtReady} />
+      <a className="taggo-skip-link" href="#main">
+        Aller au contenu
+      </a>
+      <LogoIntro ready={shirtReady && pageLoaded} />
       <LandingStructuredData title={TITLE} description={DESCRIPTION} />
-      <LandingHeader />
+      <LandingHeader variant="overlay" />
 
       <main id="main" className="taggo-landing">
         <StoryExperience onReady={handleReady} />

@@ -23,6 +23,11 @@ type LandingHeaderProps = {
   cta?: HeaderLink
   /** Optional cart badge (shop pages). */
   cartCount?: number
+  /**
+   * `overlay` : en-tête fixe et sombre, posé sur le hero marine de la landing.
+   * `default` : en-tête crème collant, utilisé par la boutique et les pages de contenu.
+   */
+  variant?: 'default' | 'overlay'
 }
 
 function isAnchorLink(href: string): boolean {
@@ -74,8 +79,15 @@ function HeaderNavItem({
  * The shop reuses this component with its own links/CTA so both surfaces share
  * exactly the same navigation and visual identity.
  */
-export function LandingHeader({ links = NAV_LINKS, cta = DEFAULT_CTA, cartCount }: LandingHeaderProps) {
+export function LandingHeader({
+  links = NAV_LINKS,
+  cta = DEFAULT_CTA,
+  cartCount,
+  variant = 'default',
+}: LandingHeaderProps) {
   const [open, setOpen] = useState(false)
+  const overlay = variant === 'overlay'
+  const baseUrl = (import.meta.env.BASE_URL ?? '').replace(/\/+$/, '')
 
   // Close mobile menu on resize to desktop
   useEffect(() => {
@@ -97,21 +109,37 @@ export function LandingHeader({ links = NAV_LINKS, cta = DEFAULT_CTA, cartCount 
   const closeMenu = () => setOpen(false)
 
   return (
-    <header className="taggo-landing-header">
+    <header className={`taggo-landing-header${overlay ? ' taggo-landing-header--overlay' : ''}`}>
       <div className="taggo-landing-header__inner">
         <Link to="/" className="taggo-landing-header__logo" aria-label="TAGGO — Accueil">
           <img
-            src={`${import.meta.env.BASE_URL}logo/monogram.svg`}
+            src={`${baseUrl}logo/monogram.svg`}
             alt=""
             className="taggo-landing-header__logo-img taggo-landing-header__logo-img--mobile"
             width="40"
             height="40"
+            style={
+              overlay
+                ? {
+                    maskImage: `url(${baseUrl}logo/monogram.svg)`,
+                    WebkitMaskImage: `url(${baseUrl}logo/monogram.svg)`,
+                  }
+                : undefined
+            }
           />
           <img
-            src={`${import.meta.env.BASE_URL}logo/wordgram.svg`}
+            src={`${baseUrl}logo/wordgram.svg`}
             alt=""
             className="taggo-landing-header__logo-img taggo-landing-header__logo-img--desktop"
             height="36"
+            style={
+              overlay
+                ? {
+                    maskImage: `url(${baseUrl}logo/wordgram.svg)`,
+                    WebkitMaskImage: `url(${baseUrl}logo/wordgram.svg)`,
+                  }
+                : undefined
+            }
           />
         </Link>
 
