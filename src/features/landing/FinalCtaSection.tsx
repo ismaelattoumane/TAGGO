@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Container } from '../../components/ui/Layout/Layout'
 import { Reveal } from './Reveal'
 import './FinalCtaSection.css'
+import './PhoneCard.css'
 
 /**
  * TAGGO Final CTA — strong visual presence, premium feel.
@@ -26,12 +27,17 @@ export function FinalCtaSection() {
             </p>
           </Reveal>
           <Reveal delay={300}>
-            <Link
-              to="/register"
-              className="taggo-button taggo-button--primary taggo-finalcta-button"
-            >
-              Créer mon TAGGO
-            </Link>
+            <div className="taggo-finalcta-actions">
+              <Link
+                to="/register"
+                className="taggo-button taggo-button--primary taggo-finalcta-button"
+              >
+                Créer mon TAGGO
+              </Link>
+              <a className="taggo-button taggo-button--ghost" href="#concept">
+                Découvrir TAGGO
+              </a>
+            </div>
           </Reveal>
         </div>
       </Container>

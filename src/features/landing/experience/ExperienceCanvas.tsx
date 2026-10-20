@@ -49,6 +49,13 @@ function Rig({ ctrl, scanRef, reduced, onReady }: RigProps) {
     invalidate()
   }, [width, height, invalidate])
 
+  // Filet de sécurité : redessine quelques fois juste après le montage (texture envoyée au GPU).
+  // Indispensable en mode « still » (reduced motion), où aucun défilement ne déclenche de rendu.
+  useEffect(() => {
+    const timers = [0, 150, 600].map((ms) => window.setTimeout(() => invalidate(), ms))
+    return () => timers.forEach((id) => window.clearTimeout(id))
+  }, [invalidate])
+
   useFrame(({ camera, clock }) => {
     const shirt = group.current
     if (!shirt) return

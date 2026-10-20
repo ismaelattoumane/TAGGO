@@ -1,4 +1,5 @@
 import { Container } from '../../components/ui/Layout/Layout'
+import { PhoneCard } from './PhoneCard'
 import { Reveal } from './Reveal'
 import './CustomizationSection.css'
 
@@ -47,14 +48,14 @@ export function CustomizationSection() {
             </Reveal>
             <Reveal delay={100}>
               <h2 id="custom-heading" className="taggo-landing-heading">
-                Ton TAGGO, à ton image.
+                Ton QR. Tes règles.
               </h2>
             </Reveal>
             <Reveal delay={200}>
               <p className="taggo-landing-subheading">
                 Chaque TAGGO est personnalisable : liens sociaux, contact,
-                texte, destination, confidentialité. Tu changes d'avis ? Tu
-                modifies ton profil en quelques secondes.
+                texte, destination, confidentialité. Tu changes d’avis ? Tu
+                modifies ton profil en quelques secondes, avec le même T-shirt.
               </p>
             </Reveal>
             <Reveal delay={300}>
@@ -72,53 +73,15 @@ export function CustomizationSection() {
                 ))}
               </div>
             </Reveal>
+            <Reveal delay={400}>
+              <a className="taggo-button taggo-button--ghost taggo-custom-cta" href="#how-it-works">
+                Découvrir le fonctionnement
+              </a>
+            </Reveal>
           </div>
 
           <Reveal delay={200}>
-            <div className="taggo-custom-preview" aria-hidden="true">
-              <div className="taggo-custom-preview__card">
-                <div className="taggo-custom-preview__header">
-                  <span className="taggo-custom-preview__dot" />
-                  <span className="taggo-custom-preview__dot" />
-                  <span className="taggo-custom-preview__dot" />
-                </div>
-
-                <div className="taggo-custom-preview__profile">
-                  <div className="taggo-custom-preview__avatar">A</div>
-                  <div>
-                    <p className="taggo-custom-preview__name">Alex</p>
-                    <p className="taggo-custom-preview__tag">@alex</p>
-                  </div>
-                </div>
-
-                <div className="taggo-custom-preview__fields">
-                  <div className="taggo-custom-preview__field">
-                    <span className="taggo-custom-preview__field-label">Bio</span>
-                    <span className="taggo-custom-preview__field-value">
-                      Créatif. Paris. ☕
-                    </span>
-                  </div>
-                  <div className="taggo-custom-preview__field">
-                    <span className="taggo-custom-preview__field-label">Instagram</span>
-                    <span className="taggo-custom-preview__field-value taggo-custom-preview__field-value--link">
-                      @alex.creative
-                    </span>
-                  </div>
-                  <div className="taggo-custom-preview__field">
-                    <span className="taggo-custom-preview__field-label">WhatsApp</span>
-                    <span className="taggo-custom-preview__field-value">
-                      +33 6 12 34 56 78
-                    </span>
-                  </div>
-                  <div className="taggo-custom-preview__field">
-                    <span className="taggo-custom-preview__field-label">Site</span>
-                    <span className="taggo-custom-preview__field-value taggo-custom-preview__field-value--link">
-                      alex-portfolio.fr
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <PhoneCard variant="destination" />
           </Reveal>
         </div>
       </Container>

@@ -2,6 +2,8 @@ import { Container } from '../../components/ui/Layout/Layout'
 import { Reveal } from './Reveal'
 import './ConceptSection.css'
 
+const BASE_URL = (import.meta.env.BASE_URL ?? '').replace(/\/+$/, '')
+
 /**
  * TAGGO Concept — explains the product in seconds.
  * Visual: QR → T-shirt → digital profile (static, no 3D).
@@ -57,40 +59,16 @@ export function ConceptSection() {
           </div>
 
           <Reveal delay={200}>
-            <div className="taggo-concept-visual" aria-hidden="true">
-              <div className="taggo-concept-flow">
-                <div className="taggo-concept-flow__step">
-                  <div className="taggo-concept-flow__qr">
-                    <div className="taggo-qr-grid">
-                      <span /><span /><span /><span /><span />
-                      <span /><span /><span /><span /><span />
-                      <span /><span /><span /><span /><span />
-                      <span /><span /><span /><span /><span />
-                      <span /><span /><span /><span /><span />
-                    </div>
-                  </div>
-                  <p className="taggo-concept-flow__label">QR code</p>
-                </div>
-
-                <span className="taggo-concept-flow__arrow" aria-hidden="true">→</span>
-
-                <div className="taggo-concept-flow__step">
-                  <div className="taggo-concept-flow__shirt">
-                    <span className="taggo-concept-flow__shirt-icon">👕</span>
-                  </div>
-                  <p className="taggo-concept-flow__label">T-shirt</p>
-                </div>
-
-                <span className="taggo-concept-flow__arrow" aria-hidden="true">→</span>
-
-                <div className="taggo-concept-flow__step">
-                  <div className="taggo-concept-flow__profile">
-                    <span className="taggo-concept-flow__avatar">👤</span>
-                  </div>
-                  <p className="taggo-concept-flow__label">Profil digital</p>
-                </div>
-              </div>
-            </div>
+            <figure className="taggo-concept-qr">
+              <img
+                src={`${BASE_URL}/landing/product-back.png`}
+                alt="QR code TAGGO imprimé au dos du T-shirt"
+                width={442}
+                height={442}
+                loading="lazy"
+              />
+              <figcaption>Scan → Profil TAGGO</figcaption>
+            </figure>
           </Reveal>
         </div>
       </Container>

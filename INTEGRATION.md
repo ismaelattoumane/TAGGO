@@ -51,3 +51,17 @@ Réglages courants : textes → `experienceContent.ts` · rythme → `experience
 - Image Open Graph dédiée (1200×630) : l'export utilise `android-chrome-512x512.png`.
 - Analytics : `index.html` charge Google Analytics dès l'ouverture ; vérifiez qu'il respecte le consentement cookies.
 - Compression du maillage du GLB (Meshopt / Draco) : le gain est surtout là (740 Ko dont 147 Ko de texture).
+
+## 5. Synchronisation du contenu avec la landing validée (ajout)
+
+Les sections existantes ont été alignées sur la maquette publiée :
+
+| Section | Avant (dépôt) | Après |
+|---|---|---|
+| Personnalisation | « Ton TAGGO, à ton image. » · aperçu profil « Alex » | « Ton QR. Tes règles. » · mention « avec le même T-shirt » · bouton « Découvrir le fonctionnement » · carte « Où mène ton QR ? » |
+| Tableau de bord | « Un espace tout compris. » · maquette avec « Premium », « Clicks », `taggo.fr/…`, 2e TAGGO « Brouillon » | « Tout contrôler depuis un seul endroit. » · carte limitée aux données définies : TAGGO ID, destination, scans, statut |
+| Concept | schéma en émojis (QR → 👕 → profil) | le vrai QR du T-shirt + « Scan → Profil TAGGO » |
+| CTA final | un seul bouton | « Créer mon TAGGO » + « Découvrir TAGGO » |
+
+Nouveau : `PhoneCard.tsx/.css` (carte partagée, mêmes données que le hero via `experienceContent.ts`).
+Les classes CSS des anciens aperçus (`taggo-custom-preview*`, `taggo-dash-preview*`, `taggo-concept-visual*`) ne sont plus utilisées : supprimez-les de leurs fichiers `.css` quand vous voulez.
