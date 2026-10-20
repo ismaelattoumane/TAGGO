@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { TaggoWordmark } from './TaggoWordmark'
 import './LandingHeader.css'
 
 export type HeaderLink = {
@@ -18,6 +19,9 @@ const NAV_LINKS: HeaderLink[] = [
 
 const DEFAULT_CTA: HeaderLink = { label: 'Créer mon TAGGO', href: '/register' }
 
+/** Distance (px) sous laquelle la section témoin déclenche l'apparition de l'en-tête. */
+const REVEAL_OFFSET = 72
+
 type LandingHeaderProps = {
   links?: HeaderLink[]
   cta?: HeaderLink
@@ -28,6 +32,16 @@ type LandingHeaderProps = {
    * `default` : en-tête crème collant, utilisé par la boutique et les pages de contenu.
    */
   variant?: 'default' | 'overlay'
+  /**
+   * Identifiant de la section à partir de laquelle l'en-tête devient visible.
+   * Sans valeur, l'en-tête est toujours visible (boutique, pages de contenu).
+   */
+  revealFromId?: string
+  /**
+   * Identifiant de la section qui masque l'en-tête tant qu'elle est affichée
+   * (par défaut le hero de la landing).
+   */
+  hideWhileId?: string
 }
 
 function isAnchorLink(href: string): boolean {
@@ -84,10 +98,45 @@ export function LandingHeader({
   cta = DEFAULT_CTA,
   cartCount,
   variant = 'default',
+  revealFromId,
+  hideWhileId,
 }: LandingHeaderProps) {
   const [open, setOpen] = useState(false)
+  const [reached, setReached] = useState(false)
+  const [blocked, setBlocked] = useState(false)
   const overlay = variant === 'overlay'
-  const baseUrl = (import.meta.env.BASE_URL ?? '').replace(/\/+$/, '')
+
+  // L'en-tête de la landing reste masqué tant que la section témoin n'est pas
+  // atteinte : le hero marine reste dégagé, la navigation apparaît ensuite.
+  // La position est lue au scroll (et non via un seuil d'intersection) pour
+  // qu'un saut d'ancre vers une section plus basse affiche aussi la barre.
+  useEffect(() => {
+    if (!revealFromId) return
+    const target = document.getElementById(revealFromId) ?? document.body
+    const blocker = hideWhileId ? document.getElementById(hideWhileId) : null
+
+    let frame = 0
+    const update = (): void => {
+      frame = 0
+      setReached(target.getBoundingClientRect().top <= REVEAL_OFFSET)
+      if (blocker) setBlocked(blocker.getBoundingClientRect().bottom > 0)
+    }
+    const schedule = (): void => {
+      if (frame) return
+      frame = window.requestAnimationFrame(update)
+    }
+
+    schedule()
+    window.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule, { passive: true })
+    return () => {
+      window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+    }
+  }, [revealFromId, hideWhileId])
+
+  const hidden = Boolean(revealFromId) && (!reached || blocked)
 
   // Close mobile menu on resize to desktop
   useEffect(() => {
@@ -109,38 +158,15 @@ export function LandingHeader({
   const closeMenu = () => setOpen(false)
 
   return (
-    <header className={`taggo-landing-header${overlay ? ' taggo-landing-header--overlay' : ''}`}>
+    <header
+      className={`taggo-landing-header${overlay ? ' taggo-landing-header--overlay' : ''}${
+        hidden ? ' taggo-landing-header--hidden' : ''
+      }`}
+      inert={hidden || undefined}
+    >
       <div className="taggo-landing-header__inner">
         <Link to="/" className="taggo-landing-header__logo" aria-label="TAGGO — Accueil">
-          <img
-            src={`${baseUrl}logo/monogram.svg`}
-            alt=""
-            className="taggo-landing-header__logo-img taggo-landing-header__logo-img--mobile"
-            width="40"
-            height="40"
-            style={
-              overlay
-                ? {
-                    maskImage: `url(${baseUrl}logo/monogram.svg)`,
-                    WebkitMaskImage: `url(${baseUrl}logo/monogram.svg)`,
-                  }
-                : undefined
-            }
-          />
-          <img
-            src={`${baseUrl}logo/wordgram.svg`}
-            alt=""
-            className="taggo-landing-header__logo-img taggo-landing-header__logo-img--desktop"
-            height="36"
-            style={
-              overlay
-                ? {
-                    maskImage: `url(${baseUrl}logo/wordgram.svg)`,
-                    WebkitMaskImage: `url(${baseUrl}logo/wordgram.svg)`,
-                  }
-                : undefined
-            }
-          />
+          <TaggoWordmark className="taggo-landing-header__logo-mark" />
         </Link>
 
         <nav

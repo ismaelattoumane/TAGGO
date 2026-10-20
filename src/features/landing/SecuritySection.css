@@ -12,6 +12,13 @@
   transition: transform 0.3s;
 }
 
+/* Survol : la ligne glisse vers la droite, comme dans la référence. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .taggo-security-point:hover {
+    transform: translateX(6px);
+  }
+}
+
 .taggo-security-point__icon {
   display: none;
 }

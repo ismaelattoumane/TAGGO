@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom/vitest'
 
 /**
- * jsdom n'implémente pas `IntersectionObserver` : les sections de la landing
- * (composant `Reveal`) l'utilisent pour déclencher leur apparition au scroll.
+ * jsdom n'implémente pas `IntersectionObserver` : l'en-tête de la landing
+ * l'utilise pour n'apparaître qu'à partir de la section #concept.
  * Sans ce stub, le rendu de la landing en test lève une ReferenceError.
  */
 if (typeof globalThis.IntersectionObserver === 'undefined') {

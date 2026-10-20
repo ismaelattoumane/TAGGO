@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { CookieConsent } from '../cookies/CookieConsent'
+import { TaggoWordmark } from './TaggoWordmark'
 import './LandingFooter.css'
 
 export type FooterLink = {
@@ -65,12 +66,7 @@ export function LandingFooter({ navigation = NAVIGATION }: { navigation?: Footer
     <footer className="taggo-landing-footer">
       <div className="taggo-landing-footer__inner">
         <div className="taggo-landing-footer__brand">
-          <img
-            src={`${import.meta.env.BASE_URL}logo/logo.svg`}
-            alt="TAGGO"
-            className="taggo-landing-footer__logo-img"
-            height="32"
-          />
+          <TaggoWordmark className="taggo-landing-footer__logo-mark" title="TAGGO" />
           <p className="taggo-landing-footer__tagline">
             Le T-shirt connecté. Ton identité. Ton monde.
           </p>

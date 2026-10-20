@@ -40,7 +40,7 @@ export function LandingPage() {
       </a>
       <LogoIntro ready={shirtReady && pageLoaded} />
       <LandingStructuredData title={TITLE} description={DESCRIPTION} />
-      <LandingHeader variant="overlay" />
+      <LandingHeader variant="overlay" revealFromId="concept" hideWhileId="story" />
 
       <main id="main" className="taggo-landing">
         <StoryExperience onReady={handleReady} />

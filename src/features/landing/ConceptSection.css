@@ -9,12 +9,27 @@
   background: #fff;
   text-align: center;
   box-shadow: 0 24px 60px rgba(43, 45, 66, 0.16);
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
 }
 
 .taggo-concept-qr img {
   display: block;
   width: 100%;
   height: auto;
+  transition: transform 0.35s;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .taggo-concept-qr:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 34px 70px rgba(43, 45, 66, 0.22);
+  }
+
+  .taggo-concept-qr:hover img {
+    transform: scale(1.03);
+  }
 }
 
 .taggo-concept-qr figcaption {

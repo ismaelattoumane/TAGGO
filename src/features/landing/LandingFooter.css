@@ -26,10 +26,16 @@
 }
 
 /* ---- Brand ---- */
-.taggo-landing-footer__logo-img {
+.taggo-landing-footer__logo-mark {
   display: block;
-  height: 2rem;
+  height: 24px;
   width: auto;
+  color: var(--taggo-background);
+  transition: opacity 0.2s;
+}
+
+.taggo-landing-footer__brand:hover .taggo-landing-footer__logo-mark {
+  opacity: 0.7;
 }
 
 .taggo-landing-footer__tagline {

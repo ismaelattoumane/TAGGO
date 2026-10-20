@@ -79,6 +79,38 @@ describe('LandingPage', () => {
     expect(types).toContain('WebPage')
     expect(types).toContain('FAQPage')
   })
+
+  it('affiche le wordmark TAGGO dans l’en-tête et le pied de page', () => {
+    renderLanding()
+
+    const marks = document.querySelectorAll(
+      '.taggo-landing-header__logo-mark, .taggo-landing-footer__logo-mark',
+    )
+    expect(marks).toHaveLength(2)
+    for (const mark of marks) {
+      expect(mark.getAttribute('viewBox')).toBe('126 126 846 126')
+      expect(mark.querySelectorAll('path').length).toBeGreaterThan(0)
+    }
+  })
+
+  it('masque l’en-tête tant que la section #concept n’est pas atteinte', () => {
+    renderLanding()
+
+    const header = document.querySelector('.taggo-landing-header')
+    expect(header).not.toBeNull()
+    expect(header).toHaveClass('taggo-landing-header--hidden')
+    expect(header).toHaveAttribute('inert')
+  })
+
+  it('affiche le contenu sans fondu au scroll', () => {
+    renderLanding()
+
+    const reveals = document.querySelectorAll('.taggo-reveal')
+    expect(reveals.length).toBeGreaterThan(0)
+    for (const reveal of reveals) {
+      expect(reveal).not.toHaveClass('taggo-reveal--visible')
+    }
+  })
 })
 
 describe('buildLandingJsonLd', () => {
