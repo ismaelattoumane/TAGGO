@@ -173,7 +173,7 @@ svg {
 }
 
 .primary-button {
-  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  background: var(--accent-strong);
   color: #fff;
   font-weight: 700;
   padding: 0.9rem 1.2rem;
@@ -238,16 +238,23 @@ svg {
 }
 
 .dashboard-shell {
-  justify-content: flex-start;
+  display: block;
+  min-height: 100vh;
   padding: 0;
 }
 
 .sidebar {
-  width: 260px;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 10;
+  display: flex;
+  width: 272px;
   min-height: 100vh;
-  background: rgba(43, 45, 66, 0.96);
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--navy);
   color: #f5f5f7;
-  padding: 2rem 1.2rem;
+  padding: 2rem 1.35rem;
 }
 
 .nav {
@@ -257,21 +264,29 @@ svg {
 }
 
 .nav-item {
-  padding: 0.8rem 0.9rem;
+  padding: 0.85rem 1rem;
   border-radius: 12px;
   color: rgba(255, 255, 255, 0.78);
   text-decoration: none;
   font-weight: 600;
+  transition: background-color 0.18s ease, color 0.18s ease;
 }
 
+.nav-item:hover,
 .nav-item.active {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
 .main-panel {
-  flex: 1;
-  padding: 2rem 2.5rem;
+  min-height: 100vh;
+  margin-left: 272px;
+  padding: 2.5rem clamp(1.25rem, 4vw, 4rem);
+}
+
+.main-panel > * {
+  width: min(100%, 1320px);
+  margin-inline: auto;
 }
 
 .topbar,
@@ -292,6 +307,12 @@ svg {
 
 .topbar {
   margin-bottom: 2rem;
+}
+
+.topbar h1 {
+  margin-top: 0.35rem;
+  color: var(--ink);
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
 }
 
 .stats-grid {
@@ -334,7 +355,7 @@ svg {
   padding: 1.2rem;
   border: 1px solid rgba(244, 201, 93, 0.45);
   border-radius: 22px;
-  background: linear-gradient(135deg, rgba(48, 25, 52, 0.97), rgba(11, 19, 32, 0.95));
+  background: var(--navy);
   color: #fff;
 }
 
@@ -393,6 +414,7 @@ svg {
 .sidebar-sign-out {
   width: 100%;
   margin-top: 1.5rem;
+  flex-shrink: 0;
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
   text-align: left;
@@ -804,8 +826,11 @@ svg {
   }
 
   .sidebar {
+    position: static;
+    display: block;
     width: 100%;
     min-height: 0;
+    overflow: visible;
     padding: 1.25rem 1rem;
   }
 
@@ -821,6 +846,7 @@ svg {
   }
 
   .main-panel {
+    margin-left: 0;
     width: 100%;
     padding: 1.25rem 1rem 2rem;
   }

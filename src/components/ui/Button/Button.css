@@ -14,7 +14,7 @@
 }
 
 .taggo-button--primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: var(--color-primary);
   color: #fff;
   padding: 0.9rem 1.2rem;
 }
@@ -44,7 +44,7 @@
 }
 
 .taggo-button--primary:active:not(:disabled) {
-  background: linear-gradient(135deg, var(--color-primary-active), var(--color-secondary));
+  background: var(--color-primary-active);
   transform: translateY(0);
 }
 
