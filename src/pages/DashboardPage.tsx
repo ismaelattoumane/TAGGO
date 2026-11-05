@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Link } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { qrRepository } from '../features/qr/repository'
 import type { QrRecord } from '../features/qr/qrTypes'
@@ -9,6 +8,7 @@ import { Badge } from '../components/ui/Badge/Badge'
 import { EmptyState } from '../components/ui/State/State'
 import { Eyebrow } from '../components/ui/Typography/Typography'
 import { SelectField } from '../components/ui/Field/Field'
+import { TaggoWordmark } from '../features/landing/TaggoWordmark'
 import { usePageSeo } from '../lib/usePageSeo'
 
 const statusLabels: Record<QrRecord['status'], string> = {
@@ -22,8 +22,10 @@ export function DashboardPage() {
   usePageSeo({ title: 'Tableau de bord — TAGGO', description: 'Tableau de bord de votre compte TAGGO : vos vêtements connectés et vos QR codes.', noindex: true })
   const { profile, user, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [qrList, setQrList] = useState<QrRecord[]>([])
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'inactive' | 'archived'>('all')
+  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
 
@@ -42,7 +44,26 @@ export function DashboardPage() {
     }
   }, [user])
 
-  const filteredQrList = filter === 'all' ? qrList : qrList.filter((qr) => qr.status === filter)
+  const normalizedSearch = search.trim().toLowerCase()
+  const filteredQrList = qrList.filter((qr) => {
+    const matchesFilter = filter === 'all' || qr.status === filter
+    const matchesSearch = !normalizedSearch
+      || [qr.title, qr.publicId, qr.destinationUrl].some((value) => value.toLowerCase().includes(normalizedSearch))
+    return matchesFilter && matchesSearch
+  })
+
+  const navItems = [
+    { href: '/dashboard', label: 'Dashboard', exact: true },
+    { href: '/dashboard/qr/new', label: 'QR Codes' },
+    { href: '/activate', label: 'Activer un TAGGO' },
+    { href: '/shop', label: 'Boutique' },
+    { href: '/cart', label: 'Panier' },
+    { href: '/dashboard/settings', label: 'Paramètres' },
+  ]
+
+  const isNavItemActive = (href: string, exact = false) => (
+    exact ? location.pathname === href : location.pathname.startsWith(href)
+  )
 
   const handleSignOut = async () => {
     await signOut()
@@ -58,13 +79,22 @@ export function DashboardPage() {
     <main className="dashboard-shell">
       <aside className="sidebar">
         <div className="brand-block">
-          <span className="brand-mark">TAGGO</span>
+          <Link to="/dashboard" className="dashboard-brand" aria-label="TAGGO — Tableau de bord">
+            <TaggoWordmark className="dashboard-brand__logo" title="TAGGO" />
+          </Link>
         </div>
 
         <nav className="nav" aria-label="Navigation principale">
-          <Link to="/dashboard" className="nav-item active" aria-current="page">Dashboard</Link>
-          <Link to="/dashboard/qr/new" className="nav-item">QR Codes</Link>
-          <Link to="/dashboard/settings" className="nav-item">Paramètres</Link>
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={`nav-item${isNavItemActive(item.href, item.exact) ? ' active' : ''}`}
+              aria-current={isNavItemActive(item.href, item.exact) ? 'page' : undefined}
+            >
+              {item.label}
+            </Link>
+          ))}
         </nav>
 
         <button type="button" className="ghost-button sidebar-sign-out" onClick={handleSignOut}>
@@ -95,10 +125,35 @@ export function DashboardPage() {
             <strong>{qrList.filter((qr) => qr.status === 'inactive').length}</strong>
           </article>
           <article className="stat-card">
+            <span>Brouillons</span>
+            <strong>{qrList.filter((qr) => qr.status === 'draft').length}</strong>
+          </article>
+          <article className="stat-card">
             <span>Total TAGGO</span>
             <strong>{qrList.length}</strong>
           </article>
         </div>
+
+        <section className="quick-actions" aria-labelledby="quick-actions-title">
+          <div>
+            <p className="eyebrow">Accès rapide</p>
+            <h2 id="quick-actions-title">Gérer votre espace</h2>
+          </div>
+          <div className="quick-actions__links">
+            <Link to="/dashboard/qr/new" className="quick-action">
+              <strong>Créer un TAGGO</strong>
+              <span>Ajouter un nouveau QR code</span>
+            </Link>
+            <Link to="/activate" className="quick-action">
+              <strong>Activer un TAGGO</strong>
+              <span>Lier un TAGGO à votre compte</span>
+            </Link>
+            <Link to="/shop" className="quick-action">
+              <strong>Découvrir la boutique</strong>
+              <span>Commander un nouveau produit</span>
+            </Link>
+          </div>
+        </section>
 
         <section className="panel">
           <div className="panel-header">
@@ -106,7 +161,17 @@ export function DashboardPage() {
               <p className="eyebrow">Votre collection</p>
               <h2 id="qr-list-title">Mes TAGGO</h2>
             </div>
-            <div className="filter-control">
+            <div className="list-controls">
+              <label className="search-control" htmlFor="qr-search">
+                Rechercher
+                <input
+                  id="qr-search"
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Nom, identifiant ou destination"
+                />
+              </label>
               <SelectField
                 id="qr-status-filter"
                 label="Filtrer par statut"
@@ -129,16 +194,18 @@ export function DashboardPage() {
               <p role="alert" className="form-error">{loadError}</p>
             ) : filteredQrList.length === 0 ? (
               <EmptyState
-                title="Aucun QR code trouvé"
-                description="Créez votre premier QR TAGGO pour commencer."
+                title={search || filter !== 'all' ? 'Aucun résultat' : 'Aucun QR code trouvé'}
+                description={search || filter !== 'all' ? 'Modifiez votre recherche ou votre filtre.' : 'Créez votre premier QR TAGGO pour commencer.'}
                 action={
-                  <Link
-                    to="/dashboard/qr/new"
-                    className="primary-button"
-                    style={{ textDecoration: 'none', display: 'inline-block' }}
-                  >
-                    Créer le premier
-                  </Link>
+                  search || filter !== 'all' ? (
+                    <button type="button" className="ghost-button" onClick={() => { setSearch(''); setFilter('all') }}>
+                      Réinitialiser
+                    </button>
+                  ) : (
+                    <Link to="/dashboard/qr/new" className="primary-button">
+                      Créer le premier
+                    </Link>
+                  )
                 }
               />
             ) : (

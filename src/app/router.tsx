@@ -88,6 +88,14 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'activate',
+        element: (
+          <ProtectedRoute>
+            <ActivateTaggoPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'dashboard/qr/:qrId',
         element: (
           <ProtectedRoute>
