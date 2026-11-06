@@ -126,9 +126,8 @@ select public.finish_stripe_event('evt_test_rejected', 'rejected', 'amount_misma
 select is((select status from public.stripe_webhook_events where stripe_event_id = 'evt_test_rejected'), 'rejected',
   'le statut rejected est accepté et journalisé');
 
--- Une seconde commande, celle-là EN ATTENTE : c'est le seul état où Stripe peut
--- être contredit, car `mark_shop_order_paid` rend la main sur une commande
--- déjà payée avant même de comparer le montant.
+-- Une seconde commande EN ATTENTE permet de vérifier que les contrôles
+-- financiers restent actifs avant toute transition de statut.
 insert into public.orders (id, customer_id, status, subtotal_cents, currency, stripe_checkout_session_id)
 values ('f4f4f4f4-f4f4-4f4f-8f4f-f4f4f4f4f4f4', '99999999-9999-4999-8999-000000000009',
         'pending', 5000, 'EUR', 'cs_test_pending');
@@ -146,17 +145,17 @@ select throws_ok(
 select is((select status from public.orders where id = 'f4f4f4f4-f4f4-4f4f-8f4f-f4f4f4f4f4f4'), 'pending',
   'après un refus, la commande reste en attente');
 select throws_ok(
-  $select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_flows', 'pi_test', 1, 'EUR')$,
+  $test$select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_flows', 'pi_test', 1, 'EUR')$test$,
   'P0001', 'amount_mismatch',
   'une commande déjà payée refuse un montant Stripe différent'
 );
 select throws_ok(
-  $select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_other', 'pi_test', 5000, 'EUR')$,
+  $test$select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_other', 'pi_test', 5000, 'EUR')$test$,
   'P0001', 'session_mismatch',
   'une commande déjà payée refuse une autre session Stripe'
 );
 select throws_ok(
-  $select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_flows', 'pi_test_other', 5000, 'EUR')$,
+  $test$select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_flows', 'pi_test_other', 5000, 'EUR')$test$,
   'P0001', 'payment_intent_mismatch',
   'une commande déjà payée refuse un autre PaymentIntent'
 );
