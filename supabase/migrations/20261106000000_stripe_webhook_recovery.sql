@@ -209,7 +209,7 @@ language sql
 stable
 security definer
 set search_path = public
-as $
+as $reconcile$
   select
     o.id as order_id,
     (
@@ -233,7 +233,7 @@ as $
     )
   order by o.paid_at nulls first, o.created_at
   limit greatest(1, least(coalesce(p_limit, 100), 500));
-$;
+$reconcile$;
 
 revoke execute on function public.list_paid_orders_pending_taggos(integer)
   from public, anon, authenticated;
