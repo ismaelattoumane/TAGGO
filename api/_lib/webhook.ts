@@ -51,11 +51,17 @@ export type WebhookDeps = {
   reserveTaggos(orderId: string, quantity: number): Promise<void>
 }
 
+export function stripeWebhookHttpStatus(status: StripeEventStatus): number {
+  if (status === 'rejected') return 400
+  if (status === 'failed') return 500
+  return 200
+}
+
 export type WebhookOutcome = {
   status: StripeEventStatus
   orderId?: string
   detail?: string
-  /** `true` si la commande vient d'être payée par cet événement. */
+  /** `true` si Stripe confirme le paiement, y compris lors d'un rejeu de réparation. */
   paid: boolean
 }
 
@@ -107,11 +113,6 @@ async function handleCheckoutSession(
     return { status: 'rejected', orderId, paid: false, detail: 'order_not_found' }
   }
 
-  if (order.status === 'paid') {
-    await deps.finishEvent(event.id, 'ignored', 'already_paid')
-    return { status: 'ignored', orderId, paid: false, detail: 'already_paid' }
-  }
-
   if (typeof session.amount_total !== 'number') {
     await deps.finishEvent(event.id, 'rejected', 'missing_amount')
     return { status: 'rejected', orderId, paid: false, detail: 'missing_amount' }
@@ -137,6 +138,8 @@ async function handleCheckoutSession(
     return { status: 'rejected', orderId, paid: false, detail: 'session_mismatch' }
   }
 
+  // La RPC valide aussi montant/devise/session si la commande est déjà payée.
+  // Cela permet de réparer l'attribution sans accepter une autre session Stripe.
   await deps.markOrderPaid({
     orderId,
     stripeSessionId: session.id,
@@ -151,9 +154,10 @@ async function handleCheckoutSession(
   try {
     await deps.reserveTaggos(orderId, quantity)
   } catch {
-    // Le paiement est acquis : on n'annule PAS, on journalise pour traitement.
-    await deps.finishEvent(event.id, 'processed', 'paid_taggo_pending')
-    return { status: 'processed', orderId, paid: true, detail: 'paid_taggo_pending' }
+    // Le paiement reste acquis. Le statut failed déclenche un retry Stripe et
+    // begin_stripe_event autorise la reprise de cet événement.
+    await deps.finishEvent(event.id, 'failed', 'paid_taggo_pending')
+    return { status: 'failed', orderId, paid: true, detail: 'paid_taggo_pending' }
   }
 
   await deps.finishEvent(event.id, 'processed', null)
