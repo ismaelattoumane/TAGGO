@@ -22,6 +22,11 @@ describe('readServerEnv', () => {
     })
   })
 
+  it('lit le secret des tâches planifiées côté serveur', () => {
+    expect(readServerEnv({ CRON_SECRET: 'cron-placeholder' } as NodeJS.ProcessEnv).cronSecret)
+      .toBe('cron-placeholder')
+  })
+
   it('accepte VITE_SUPABASE_URL en repli', () => {
     const env = readServerEnv({ VITE_SUPABASE_URL: 'https://fallback.supabase.co' } as NodeJS.ProcessEnv)
     expect(env.supabaseUrl).toBe('https://fallback.supabase.co')
