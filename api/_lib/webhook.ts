@@ -31,6 +31,7 @@ export type OrderForPayment = {
   subtotalCents: number | null
   currency: string | null
   stripeCheckoutSessionId: string | null
+  stripePaymentIntentId: string | null
   taggoQuantity: number
 }
 
@@ -138,13 +139,18 @@ async function handleCheckoutSession(
     return { status: 'rejected', orderId, paid: false, detail: 'session_mismatch' }
   }
 
-  // La RPC valide aussi montant/devise/session si la commande est déjà payée.
+  const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : null
+  if (order.stripePaymentIntentId && order.stripePaymentIntentId !== paymentIntentId) {
+    await deps.finishEvent(event.id, 'rejected', 'payment_intent_mismatch')
+    return { status: 'rejected', orderId, paid: false, detail: 'payment_intent_mismatch' }
+  }
+
+  // La RPC valide aussi montant/devise/session/PaymentIntent si la commande est déjà payée.
   // Cela permet de réparer l'attribution sans accepter une autre session Stripe.
   await deps.markOrderPaid({
     orderId,
     stripeSessionId: session.id,
-    stripePaymentIntentId:
-      typeof session.payment_intent === 'string' ? session.payment_intent : null,
+    stripePaymentIntentId: paymentIntentId,
     amountTotal: session.amount_total,
     currency: sessionCurrency,
   })
