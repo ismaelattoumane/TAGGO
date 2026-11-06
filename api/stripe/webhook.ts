@@ -4,7 +4,7 @@ import { failure } from '../_lib/errors'
 import { createServerSupabase } from '../_lib/supabaseAdmin'
 import { createStripeGateway } from '../_lib/stripeGateway'
 import { beginStripeEvent, finishStripeEvent, findOrderForPayment, markOrderPaid, reserveTaggos } from '../_lib/orderServer'
-import { processStripeEvent } from '../_lib/webhook'
+import { processStripeEvent, stripeWebhookHttpStatus } from '../_lib/webhook'
 import { dispatchTransactionalEmail } from '../_lib/emailDispatch'
 import { beginEmailEvent, finishEmailEvent } from '../_lib/emailServer'
 import { createEmailProvider } from '../_lib/emailProvider'
@@ -51,28 +51,34 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
     return failure('stripe_unavailable')
   }
 
-  const outcome = await processStripeEvent(
-    {
+  let outcome
+  try {
+    outcome = await processStripeEvent(
+      {
       beginEvent: (eventId, eventType, orderId) => beginStripeEvent(supabase, eventId, eventType, orderId),
       finishEvent: (eventId, status, detail) => finishStripeEvent(supabase, eventId, status, detail),
       findOrder: (orderId) => findOrderForPayment(supabase, orderId),
       markOrderPaid: (input) => markOrderPaid(supabase, input),
       reserveTaggos: (orderId, quantity) => reserveTaggos(supabase, orderId, quantity),
     },
-    event,
-  )
+      event,
+    )
+  } catch {
+    // Toute erreur non gérée doit rester retryable côté Stripe.
+    return json(500, { received: false, status: 'failed', detail: 'webhook_processing_failed' })
+  }
 
   // Étape 10 — Email transactionnel « commande confirmée ».
   //
-  // - déclenché UNIQUEMENT quand cet événement vient de faire passer la
-  //   commande à `paid` côté serveur ;
+  // - déclenché uniquement après confirmation du paiement ET attribution
+  //   complète des TAGGO ; un rejeu réparé peut donc compléter un email manqué ;
   // - jamais déclenché par le frontend : le navigateur ne peut pas appeler
   //   cette couche ;
   // - idempotent : la clé `ORDER_CONFIRMED:<orderId>` est réservée par une
   //   insertion atomique, donc un webhook rejoué n'envoie pas un second email ;
   // - non bloquant pour le paiement : un échec d'email ne change jamais la
   //   réponse envoyée à Stripe.
-  if (outcome.paid && outcome.orderId && env.appUrl) {
+  if (outcome.status === 'processed' && outcome.paid && outcome.orderId && env.appUrl) {
     try {
       const context = await loadOrderEmailContext(
         supabase,
@@ -99,10 +105,9 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
     }
   }
 
-  // Un événement rejeté (montant, devise, commande) reste un 400 pour Stripe :
-  // il est visible dans le dashboard et ne sera pas rejoué silencieusement.
-  if (outcome.status === 'rejected') {
-    return json(400, { received: true, status: outcome.status, detail: outcome.detail })
+  const httpStatus = stripeWebhookHttpStatus(outcome.status)
+  if (httpStatus !== 200) {
+    return json(httpStatus, { received: true, status: outcome.status, detail: outcome.detail })
   }
 
   return json(200, { received: true, status: outcome.status })
