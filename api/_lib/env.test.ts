@@ -19,6 +19,9 @@ describe('readServerEnv', () => {
       supabaseServiceRoleKey: 'service-role-placeholder',
       supabaseAnonKey: 'anon-placeholder',
       appUrl: 'https://taggo.test',
+      emailProviderName: undefined,
+      emailProviderApiKey: undefined,
+      cronSecret: undefined,
     })
   })
 
