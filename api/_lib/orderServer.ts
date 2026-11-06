@@ -121,11 +121,13 @@ export async function finishStripeEvent(
   status: StripeEventStatus,
   detail: string | null = null,
 ): Promise<void> {
-  await client.rpc('finish_stripe_event', {
+  const result = (await client.rpc('finish_stripe_event', {
     p_stripe_event_id: eventId,
     p_status: status,
     p_detail: detail,
-  })
+  })) as RpcResult<unknown>
+
+  if (result.error) throw new Error('stripe_event_finish_failed')
 }
 
 type OrderRow = {
