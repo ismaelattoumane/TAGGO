@@ -51,7 +51,7 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
     return failure('stripe_unavailable')
   }
 
-  let outcome
+  let outcome: Awaited<ReturnType<typeof processStripeEvent>>
   try {
     outcome = await processStripeEvent(
       {
