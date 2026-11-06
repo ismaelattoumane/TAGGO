@@ -404,17 +404,16 @@ describe('audit SQL — order des migrations', () => {
     // plus celui qui a été audité. Une migration de durcissement peut donc bien
     // être ajoutée APRÈS, à condition de ne redefinir aucun de ces RPC.
     //
-    // EXCEPTION DÉCLARÉE, ET UNIQUEMENT CELLE-LÀ :
-    // `20260931130000_taggo_hardening_followup.sql` recrée
-    // `reserve_taggos_for_paid_order`, parce que son chemin de rejeu de webhook
-    // était cassé (`foreach` sur un `uuid[]` avec une variable `integer` : voir
-    // le défaut expliqué en tête de cette migration). Sans cette correction, la
-    // garantie d'idempotence annoncée par l'étape 12 n'était pas tenue.
+    // EXCEPTIONS DÉCLARÉES, ET UNIQUEMENT CELLES-LÀ :
+    // - `20260931130000_taggo_hardening_followup.sql` recrée
+    //   `reserve_taggos_for_paid_order` pour corriger le rejeu d'un tableau UUID.
+    // - `20261106000000_stripe_webhook_recovery.sql` recrée cette même RPC pour
+    //   rendre les affectations réparables après paiement : elle conserve les
+    //   TAGGO déjà attribués, calcule le reliquat et n'alloue que les unités
+    //   manquantes. C'est le cœur de la récupération des webhooks Stripe.
     //
-    // L'exception reste dans le test, et non dans la nature du test : une
-    // migration future qui redéfinirait une autre fonction de l'étape 12
-    // échouerait toujours. `expect(Object.keys(...))` interdit en outre qu'on
-    //transforme l'exception en passe-partout en ajoutant un fichier à la liste.
+    // Chaque fichier et chaque fonction autorisés sont explicitement listés.
+    // Toute autre redéfinition reste bloquée.
     const { readdirSync } = require('node:fs') as typeof import('node:fs')
     const dir = join(root, 'supabase/migrations')
     const files = readdirSync(dir).filter((file) => file.endsWith('.sql')).sort()
@@ -425,10 +424,12 @@ describe('audit SQL — order des migrations', () => {
     const justifiedShadows: Record<string, string[]> = {
       '20260931130000_taggo_hardening_followup.sql': ['reserve_taggos_for_paid_order'],
       '20260931141000_step141_security_corrections.sql': ['get_public_taggo_state'],
+      '20261106000000_stripe_webhook_recovery.sql': ['reserve_taggos_for_paid_order'],
     }
     expect(Object.keys(justifiedShadows)).toEqual([
       '20260931130000_taggo_hardening_followup.sql',
       '20260931141000_step141_security_corrections.sql',
+      '20261106000000_stripe_webhook_recovery.sql',
     ])
 
     const defined = [...migration.matchAll(/create or replace function public\.(\w+)/g)].map((m) => m[1])
