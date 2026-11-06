@@ -3,6 +3,11 @@ import { readServerEnv, isServerDatabaseConfigured } from '../_lib/env'
 import { getHeader, json } from '../_lib/http'
 import { createServerSupabase } from '../_lib/supabaseAdmin'
 import { reserveTaggos } from '../_lib/orderServer'
+import { dispatchTransactionalEmail } from '../_lib/emailDispatch'
+import { beginEmailEvent, finishEmailEvent } from '../_lib/emailServer'
+import { createEmailProvider } from '../_lib/emailProvider'
+import { buildOrderConfirmedJob, buildDashboardUrl } from '../_lib/emailTriggers'
+import { loadOrderEmailContext } from '../_lib/orderEmailContext'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ApiRequest, ApiResponse } from '../_lib/types'
 
@@ -64,6 +69,32 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
   for (const order of result.data) {
     try {
       await reserveTaggos(supabase, order.order_id, order.taggo_quantity)
+
+      // La confirmation peut avoir été différée avec l'attribution. La clé
+      // d'idempotence empêche tout second email si le webhook l'a déjà envoyé.
+      if (env.appUrl) {
+        try {
+          const context = await loadOrderEmailContext(
+            supabase,
+            order.order_id,
+            buildDashboardUrl(env.appUrl),
+          )
+          if (context) {
+            await dispatchTransactionalEmail(
+              {
+                beginEmail: (key, type, orderId, recipient) =>
+                  beginEmailEvent(supabase, { dedupeKey: key, emailType: type, orderId, recipient }),
+                finishEmail: (key, status, detail) =>
+                  finishEmailEvent(supabase, { dedupeKey: key, status, detail }),
+                provider: createEmailProvider(env),
+              },
+              buildOrderConfirmedJob(context),
+            )
+          }
+        } catch {
+          // L'email ne doit jamais annuler une réparation d'affectation réussie.
+        }
+      }
       recovered += 1
     } catch {
       // Le paiement reste acquis. La prochaine exécution reprendra cette commande.
