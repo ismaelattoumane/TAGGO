@@ -12,6 +12,7 @@ function order(overrides: Partial<OrderForPayment> = {}): OrderForPayment {
     subtotalCents: 5000,
     currency: 'EUR',
     stripeCheckoutSessionId: SESSION_ID,
+    stripePaymentIntentId: null,
     taggoQuantity: 2,
     ...overrides,
   }
@@ -202,6 +203,22 @@ describe('processStripeEvent', () => {
 
     expect(outcome).toEqual({ status: 'rejected', orderId: ORDER_ID, paid: false, detail: 'session_mismatch' })
     expect(context.markOrderPaid).not.toHaveBeenCalled()
+  })
+
+  it('refuse un PaymentIntent différent de celui déjà enregistré', async () => {
+    const context = deps({
+      findOrder: vi.fn(async () => order({ stripePaymentIntentId: 'pi_original' })),
+    })
+    const outcome = await processStripeEvent(context, sessionEvent({}, 'evt_16'))
+
+    expect(outcome).toEqual({
+      status: 'rejected',
+      orderId: ORDER_ID,
+      paid: false,
+      detail: 'payment_intent_mismatch',
+    })
+    expect(context.markOrderPaid).not.toHaveBeenCalled()
+    expect(context.reserveTaggos).not.toHaveBeenCalled()
   })
 
   it('accepte une commande sans session encore rattachée', async () => {
