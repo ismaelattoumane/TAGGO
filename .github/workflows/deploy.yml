@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # Utilise Node 20 pour éviter le problème styleText
+          node-version: '22'  # Les dépendances actuelles du projet exigent Node 22+
 
       - name: Install dependencies
         run: npm ci
