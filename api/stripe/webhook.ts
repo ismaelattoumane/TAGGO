@@ -55,12 +55,12 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
   try {
     outcome = await processStripeEvent(
       {
-      beginEvent: (eventId, eventType, orderId) => beginStripeEvent(supabase, eventId, eventType, orderId),
-      finishEvent: (eventId, status, detail) => finishStripeEvent(supabase, eventId, status, detail),
-      findOrder: (orderId) => findOrderForPayment(supabase, orderId),
-      markOrderPaid: (input) => markOrderPaid(supabase, input),
-      reserveTaggos: (orderId, quantity) => reserveTaggos(supabase, orderId, quantity),
-    },
+        beginEvent: (eventId, eventType, orderId) => beginStripeEvent(supabase, eventId, eventType, orderId),
+        finishEvent: (eventId, status, detail) => finishStripeEvent(supabase, eventId, status, detail),
+        findOrder: (orderId) => findOrderForPayment(supabase, orderId),
+        markOrderPaid: (input) => markOrderPaid(supabase, input),
+        reserveTaggos: (orderId, quantity) => reserveTaggos(supabase, orderId, quantity),
+      },
       event,
     )
   } catch {
