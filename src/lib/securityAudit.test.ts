@@ -183,6 +183,7 @@ describe('audit de sécurité — surface serveur', () => {
     expect(endpoints).toEqual([
       'api/analytics/scan.ts',
       'api/analytics/taggo.ts',
+      'api/cron/reconcile-paid-orders.ts',
       'api/orders/status.ts',
       'api/sitemap.ts',
       'api/stripe/config.ts',
@@ -192,6 +193,14 @@ describe('audit de sécurité — surface serveur', () => {
       'api/subscriptions/renew.ts',
       'api/subscriptions/taggo.ts',
     ])
+  })
+
+  it('protège le cron de réconciliation par un secret Bearer et ne l’expose pas sans configuration', () => {
+    const cron = read(resolve(root, 'api/cron/reconcile-paid-orders.ts'))
+    expect(cron).toMatch(/if \(!env\.cronSecret\)/)
+    expect(cron).toMatch(/hasValidCronAuthorization\(getHeader\(req, 'authorization'\), env\.cronSecret\)/)
+    expect(cron).toMatch(/return json\(401, \{ ok: false, error: 'unauthorized' \}\)/)
+    expect(cron).toMatch(/timingSafeEqual\(actual, expected\)/)
   })
 
   it('n’accorde pas les RPC d’email au client authentifié', () => {
