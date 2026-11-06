@@ -201,4 +201,43 @@ revoke execute on function public.begin_stripe_event(text, text, uuid)
 grant execute on function public.begin_stripe_event(text, text, uuid)
   to service_role;
 
+-- File de réconciliation durable : Stripe ne retente pas indéfiniment un
+-- événement. Cette RPC ne retourne que les commandes payées sous-équipées.
+create or replace function public.list_paid_orders_pending_taggos(p_limit integer default 100)
+returns table(order_id uuid, taggo_quantity integer)
+language sql
+stable
+security definer
+set search_path = public
+as $
+  select
+    o.id as order_id,
+    (
+      select coalesce(sum(oi.quantity), 0)::integer
+      from public.order_items oi
+      where oi.order_id = o.id
+        and oi.product_type = 'apparel'
+    ) as taggo_quantity
+  from public.orders o
+  where o.status = 'paid'
+    and (
+      select coalesce(sum(oi.quantity), 0)
+      from public.order_items oi
+      where oi.order_id = o.id
+        and oi.product_type = 'apparel'
+    ) > (
+      select count(*)
+      from public.taggo_assignments a
+      where a.order_id = o.id
+        and a.status <> 'cancelled'
+    )
+  order by o.paid_at nulls first, o.created_at
+  limit greatest(1, least(coalesce(p_limit, 100), 500));
+$;
+
+revoke execute on function public.list_paid_orders_pending_taggos(integer)
+  from public, anon, authenticated;
+grant execute on function public.list_paid_orders_pending_taggos(integer)
+  to service_role;
+
 commit;
