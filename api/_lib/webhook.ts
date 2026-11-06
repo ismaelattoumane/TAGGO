@@ -5,8 +5,8 @@ import type { StripeCheckoutSessionLike, StripeEvent } from './types'
  * ÉTAPE 9 — Traitement du webhook Stripe (serveur uniquement).
  *
  * Séquence pour `checkout.session.completed` / `async_payment_succeeded` :
- *  1. idempotence : l'event_id est inséré de façon atomique (UNIQUE) — un rejeu
- *     du même événement ne fait rien ;
+ *  1. idempotence : l'event_id est inséré atomiquement ; les événements réussis
+ *     restent bloqués, tandis que les événements échoués peuvent être repris ;
  *  2. l'événement est dans la liste traitée ;
  *  3. la session est réellement payée (`payment_status = paid`) ;
  *  4. `metadata.order_id` est présent et valide ;
@@ -35,11 +35,11 @@ export type OrderForPayment = {
 }
 
 export type WebhookDeps = {
-  /** Insertion atomique ; retourne false si l'événement a déjà été traité. */
+  /** Insertion atomique ; retourne true pour un nouvel événement ou une reprise autorisée. */
   beginEvent(eventId: string, eventType: string, orderId: string | null): Promise<boolean>
   finishEvent(eventId: string, status: StripeEventStatus, detail?: string | null): Promise<void>
   findOrder(orderId: string): Promise<OrderForPayment | null>
-  /** Transition serveur `pending -> paid` + contrôle montant/devise côté SQL. */
+  /** Valide le paiement et la session côté SQL, y compris si la commande est déjà paid. */
   markOrderPaid(input: {
     orderId: string
     stripeSessionId: string
