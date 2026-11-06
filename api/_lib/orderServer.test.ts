@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { attachStripeSession } from './orderServer'
+import { attachStripeSession, finishStripeEvent } from './orderServer'
 
 function makeClient(order: any, updateResult: any) {
   return {
@@ -61,5 +61,30 @@ describe('attachStripeSession', () => {
       { data: [], error: null },
     )
     await expect(attachStripeSession(client, 'o1', 'sess', 'u1')).rejects.toThrow('order_session_link_failed')
+  })
+})
+
+
+describe('finishStripeEvent', () => {
+  it('propage une erreur RPC au lieu de confirmer silencieusement la persistance', async () => {
+    const client = {
+      rpc: vi.fn(async () => ({ data: null, error: { message: 'database unavailable' } })),
+    } as any
+
+    await expect(finishStripeEvent(client, 'evt_test', 'failed', 'unexpected_error'))
+      .rejects.toThrow('stripe_event_finish_failed')
+    expect(client.rpc).toHaveBeenCalledWith('finish_stripe_event', {
+      p_stripe_event_id: 'evt_test',
+      p_status: 'failed',
+      p_detail: 'unexpected_error',
+    })
+  })
+
+  it('accepte une confirmation de journalisation réussie', async () => {
+    const client = {
+      rpc: vi.fn(async () => ({ data: null, error: null })),
+    } as any
+
+    await expect(finishStripeEvent(client, 'evt_test', 'processed', null)).resolves.toBeUndefined()
   })
 })
