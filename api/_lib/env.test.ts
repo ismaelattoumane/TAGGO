@@ -19,7 +19,15 @@ describe('readServerEnv', () => {
       supabaseServiceRoleKey: 'service-role-placeholder',
       supabaseAnonKey: 'anon-placeholder',
       appUrl: 'https://taggo.test',
+      emailProviderName: undefined,
+      emailProviderApiKey: undefined,
+      cronSecret: undefined,
     })
+  })
+
+  it('lit le secret des tâches planifiées côté serveur', () => {
+    expect(readServerEnv({ CRON_SECRET: 'cron-placeholder' } as NodeJS.ProcessEnv).cronSecret)
+      .toBe('cron-placeholder')
   })
 
   it('accepte VITE_SUPABASE_URL en repli', () => {

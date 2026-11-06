@@ -5,8 +5,8 @@ import type { StripeCheckoutSessionLike, StripeEvent } from './types'
  * ÉTAPE 9 — Traitement du webhook Stripe (serveur uniquement).
  *
  * Séquence pour `checkout.session.completed` / `async_payment_succeeded` :
- *  1. idempotence : l'event_id est inséré de façon atomique (UNIQUE) — un rejeu
- *     du même événement ne fait rien ;
+ *  1. idempotence : l'event_id est inséré atomiquement ; les événements réussis
+ *     restent bloqués, tandis que les événements échoués peuvent être repris ;
  *  2. l'événement est dans la liste traitée ;
  *  3. la session est réellement payée (`payment_status = paid`) ;
  *  4. `metadata.order_id` est présent et valide ;
@@ -31,15 +31,16 @@ export type OrderForPayment = {
   subtotalCents: number | null
   currency: string | null
   stripeCheckoutSessionId: string | null
+  stripePaymentIntentId: string | null
   taggoQuantity: number
 }
 
 export type WebhookDeps = {
-  /** Insertion atomique ; retourne false si l'événement a déjà été traité. */
+  /** Insertion atomique ; retourne true pour un nouvel événement ou une reprise autorisée. */
   beginEvent(eventId: string, eventType: string, orderId: string | null): Promise<boolean>
   finishEvent(eventId: string, status: StripeEventStatus, detail?: string | null): Promise<void>
   findOrder(orderId: string): Promise<OrderForPayment | null>
-  /** Transition serveur `pending -> paid` + contrôle montant/devise côté SQL. */
+  /** Valide le paiement et la session côté SQL, y compris si la commande est déjà paid. */
   markOrderPaid(input: {
     orderId: string
     stripeSessionId: string
@@ -51,11 +52,17 @@ export type WebhookDeps = {
   reserveTaggos(orderId: string, quantity: number): Promise<void>
 }
 
+export function stripeWebhookHttpStatus(status: StripeEventStatus): number {
+  if (status === 'rejected') return 400
+  if (status === 'failed') return 500
+  return 200
+}
+
 export type WebhookOutcome = {
   status: StripeEventStatus
   orderId?: string
   detail?: string
-  /** `true` si la commande vient d'être payée par cet événement. */
+  /** `true` si Stripe confirme le paiement, y compris lors d'un rejeu de réparation. */
   paid: boolean
 }
 
@@ -107,11 +114,6 @@ async function handleCheckoutSession(
     return { status: 'rejected', orderId, paid: false, detail: 'order_not_found' }
   }
 
-  if (order.status === 'paid') {
-    await deps.finishEvent(event.id, 'ignored', 'already_paid')
-    return { status: 'ignored', orderId, paid: false, detail: 'already_paid' }
-  }
-
   if (typeof session.amount_total !== 'number') {
     await deps.finishEvent(event.id, 'rejected', 'missing_amount')
     return { status: 'rejected', orderId, paid: false, detail: 'missing_amount' }
@@ -137,11 +139,18 @@ async function handleCheckoutSession(
     return { status: 'rejected', orderId, paid: false, detail: 'session_mismatch' }
   }
 
+  const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : null
+  if (order.stripePaymentIntentId && order.stripePaymentIntentId !== paymentIntentId) {
+    await deps.finishEvent(event.id, 'rejected', 'payment_intent_mismatch')
+    return { status: 'rejected', orderId, paid: false, detail: 'payment_intent_mismatch' }
+  }
+
+  // La RPC valide aussi montant/devise/session/PaymentIntent si la commande est déjà payée.
+  // Cela permet de réparer l'attribution sans accepter une autre session Stripe.
   await deps.markOrderPaid({
     orderId,
     stripeSessionId: session.id,
-    stripePaymentIntentId:
-      typeof session.payment_intent === 'string' ? session.payment_intent : null,
+    stripePaymentIntentId: paymentIntentId,
     amountTotal: session.amount_total,
     currency: sessionCurrency,
   })
@@ -151,9 +160,10 @@ async function handleCheckoutSession(
   try {
     await deps.reserveTaggos(orderId, quantity)
   } catch {
-    // Le paiement est acquis : on n'annule PAS, on journalise pour traitement.
-    await deps.finishEvent(event.id, 'processed', 'paid_taggo_pending')
-    return { status: 'processed', orderId, paid: true, detail: 'paid_taggo_pending' }
+    // Le paiement reste acquis. Le statut failed déclenche un retry Stripe et
+    // begin_stripe_event autorise la reprise de cet événement.
+    await deps.finishEvent(event.id, 'failed', 'paid_taggo_pending')
+    return { status: 'failed', orderId, paid: true, detail: 'paid_taggo_pending' }
   }
 
   await deps.finishEvent(event.id, 'processed', null)

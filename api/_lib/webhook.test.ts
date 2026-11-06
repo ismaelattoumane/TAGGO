@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { HANDLED_EVENT_TYPES, processStripeEvent, type OrderForPayment, type WebhookDeps } from './webhook'
+import { HANDLED_EVENT_TYPES, processStripeEvent, stripeWebhookHttpStatus, type OrderForPayment, type WebhookDeps } from './webhook'
 import type { StripeEvent } from './types'
 
 const ORDER_ID = '44444444-4444-4444-8444-444444444444'
@@ -12,6 +12,7 @@ function order(overrides: Partial<OrderForPayment> = {}): OrderForPayment {
     subtotalCents: 5000,
     currency: 'EUR',
     stripeCheckoutSessionId: SESSION_ID,
+    stripePaymentIntentId: null,
     taggoQuantity: 2,
     ...overrides,
   }
@@ -45,6 +46,21 @@ function deps(overrides: Partial<WebhookDeps> = {}) {
     ...overrides,
   }
 }
+
+describe('Stripe webhook HTTP status', () => {
+  it('demande un retry Stripe sur un échec technique ou d’attribution', () => {
+    expect(stripeWebhookHttpStatus('failed')).toBe(500)
+  })
+
+  it('ne demande pas de retry pour un événement rejeté', () => {
+    expect(stripeWebhookHttpStatus('rejected')).toBe(400)
+  })
+
+  it('confirme les événements traités ou ignorés', () => {
+    expect(stripeWebhookHttpStatus('processed')).toBe(200)
+    expect(stripeWebhookHttpStatus('ignored')).toBe(200)
+  })
+})
 
 describe('processStripeEvent', () => {
   it('traite un paiement confirmé : paid + réservation des TAGGO', async () => {
@@ -140,12 +156,19 @@ describe('processStripeEvent', () => {
     expect(outcome).toEqual({ status: 'rejected', orderId: ORDER_ID, paid: false, detail: 'order_not_found' })
   })
 
-  it('ne refait rien sur une commande déjà payée', async () => {
+  it('répare une commande déjà payée en revalidant Stripe puis en réservant les TAGGO', async () => {
     const context = deps({ findOrder: vi.fn(async () => order({ status: 'paid' })) })
     const outcome = await processStripeEvent(context, sessionEvent({}, 'evt_8'))
 
-    expect(outcome).toEqual({ status: 'ignored', orderId: ORDER_ID, paid: false, detail: 'already_paid' })
-    expect(context.reserveTaggos).not.toHaveBeenCalled()
+    expect(outcome).toEqual({ status: 'processed', orderId: ORDER_ID, paid: true })
+    expect(context.markOrderPaid).toHaveBeenCalledWith({
+      orderId: ORDER_ID,
+      stripeSessionId: SESSION_ID,
+      stripePaymentIntentId: 'pi_test_1',
+      amountTotal: 5000,
+      currency: 'EUR',
+    })
+    expect(context.reserveTaggos).toHaveBeenCalledWith(ORDER_ID, 2)
   })
 
   it('refuse un montant différent de celui de la commande', async () => {
@@ -182,6 +205,22 @@ describe('processStripeEvent', () => {
     expect(context.markOrderPaid).not.toHaveBeenCalled()
   })
 
+  it('refuse un PaymentIntent différent de celui déjà enregistré', async () => {
+    const context = deps({
+      findOrder: vi.fn(async () => order({ stripePaymentIntentId: 'pi_original' })),
+    })
+    const outcome = await processStripeEvent(context, sessionEvent({}, 'evt_16'))
+
+    expect(outcome).toEqual({
+      status: 'rejected',
+      orderId: ORDER_ID,
+      paid: false,
+      detail: 'payment_intent_mismatch',
+    })
+    expect(context.markOrderPaid).not.toHaveBeenCalled()
+    expect(context.reserveTaggos).not.toHaveBeenCalled()
+  })
+
   it('accepte une commande sans session encore rattachée', async () => {
     const context = deps({ findOrder: vi.fn(async () => order({ stripeCheckoutSessionId: null })) })
     const outcome = await processStripeEvent(context, sessionEvent({}, 'evt_13'))
@@ -198,12 +237,12 @@ describe('processStripeEvent', () => {
     const outcome = await processStripeEvent(context, sessionEvent({}, 'evt_14'))
 
     expect(outcome).toEqual({
-      status: 'processed',
+      status: 'failed',
       orderId: ORDER_ID,
       paid: true,
       detail: 'paid_taggo_pending',
     })
-    expect(context.finishEvent).toHaveBeenCalledWith('evt_14', 'processed', 'paid_taggo_pending')
+    expect(context.finishEvent).toHaveBeenCalledWith('evt_14', 'failed', 'paid_taggo_pending')
   })
 
   it('journalise un échec inattendu sans masquer l’événement', async () => {

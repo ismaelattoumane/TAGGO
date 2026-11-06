@@ -26,6 +26,8 @@ export type ServerEnv = {
    * le préfixer par `VITE_` (ce prefixe est embarqué dans le bundle navigateur).
    */
   emailProviderApiKey: string | undefined
+  /** Secret partagé avec les Cron Jobs Vercel pour les tâches internes. */
+  cronSecret: string | undefined
 }
 
 export function readServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
@@ -38,6 +40,7 @@ export function readServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn
     appUrl: source.APP_URL,
     emailProviderName: source.EMAIL_PROVIDER_NAME,
     emailProviderApiKey: source.EMAIL_PROVIDER_API_KEY,
+    cronSecret: source.CRON_SECRET,
   }
 }
 

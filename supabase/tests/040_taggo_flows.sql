@@ -18,7 +18,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(46);
+select plan(64);
 
 -- Identifiants de fixtures.
 --   TAGGO     : le TAGGO acheté puis activé dans ce scénario.
@@ -66,6 +66,7 @@ values ('eeeeeeee-eeee-4eee-8eee-00000000000e', 'TGG-FLOW002', 'draft', 'availab
 insert into public.orders (id, customer_id, status, subtotal_cents, currency, paid_at, stripe_checkout_session_id)
 values ('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', '99999999-9999-4999-8999-000000000009',
         'paid', 5000, 'EUR', now(), 'cs_test_flows');
+update public.orders set stripe_payment_intent_id = 'pi_test' where id = 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b';
 
 -- ===========================================================================
 -- 1. Commande créée par le client : le montant est calculé en base
@@ -101,9 +102,32 @@ select is(public.begin_stripe_event('evt_test_1', 'checkout.session.completed', 
 select is(public.begin_stripe_event('evt_test_1', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), false,
   'le rejeu du même événement est détecté (idempotence)');
 
--- Une seconde commande, celle-là EN ATTENTE : c'est le seul état où Stripe peut
--- être contredit, car `mark_shop_order_paid` rend la main sur une commande
--- déjà payée avant même de comparer le montant.
+select is(public.begin_stripe_event('evt_test_retry', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), true,
+  'un nouvel événement de reprise est accepté');
+select public.finish_stripe_event('evt_test_retry', 'failed', 'unexpected_error');
+select is(public.begin_stripe_event('evt_test_retry', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), true,
+  'un événement failed est rouvert pour retry');
+select public.finish_stripe_event('evt_test_retry', 'processed', null);
+select is(public.begin_stripe_event('evt_test_retry', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), false,
+  'un événement réparé redevient idempotent');
+
+select is(public.begin_stripe_event('evt_test_pending', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), true,
+  'un événement paid_taggo_pending est accepté initialement');
+select public.finish_stripe_event('evt_test_pending', 'processed', 'paid_taggo_pending');
+select is(public.begin_stripe_event('evt_test_pending', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), true,
+  'un événement paid_taggo_pending est rouvert');
+select public.finish_stripe_event('evt_test_pending', 'processed', null);
+select is(public.begin_stripe_event('evt_test_pending', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), false,
+  'un événement réparé ne se traite pas une troisième fois');
+
+select is(public.begin_stripe_event('evt_test_rejected', 'checkout.session.completed', 'bbbbbbbb-bbbb-4bbb-8bbb-00000000000b'), true,
+  'un événement à rejeter est accepté initialement');
+select public.finish_stripe_event('evt_test_rejected', 'rejected', 'amount_mismatch');
+select is((select status from public.stripe_webhook_events where stripe_event_id = 'evt_test_rejected'), 'rejected',
+  'le statut rejected est accepté et journalisé');
+
+-- Une seconde commande EN ATTENTE permet de vérifier que les contrôles
+-- financiers restent actifs avant toute transition de statut.
 insert into public.orders (id, customer_id, status, subtotal_cents, currency, stripe_checkout_session_id)
 values ('f4f4f4f4-f4f4-4f4f-8f4f-f4f4f4f4f4f4', '99999999-9999-4999-8999-000000000009',
         'pending', 5000, 'EUR', 'cs_test_pending');
@@ -120,6 +144,21 @@ select throws_ok(
 );
 select is((select status from public.orders where id = 'f4f4f4f4-f4f4-4f4f-8f4f-f4f4f4f4f4f4'), 'pending',
   'après un refus, la commande reste en attente');
+select throws_ok(
+  $test$select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_flows', 'pi_test', 1, 'EUR')$test$,
+  'P0001', 'amount_mismatch',
+  'une commande déjà payée refuse un montant Stripe différent'
+);
+select throws_ok(
+  $test$select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_other', 'pi_test', 5000, 'EUR')$test$,
+  'P0001', 'session_mismatch',
+  'une commande déjà payée refuse une autre session Stripe'
+);
+select throws_ok(
+  $test$select public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_flows', 'pi_test_other', 5000, 'EUR')$test$,
+  'P0001', 'payment_intent_mismatch',
+  'une commande déjà payée refuse un autre PaymentIntent'
+);
 select is(
   (public.mark_shop_order_paid('bbbbbbbb-bbbb-4bbb-8bbb-00000000000b', 'cs_test_flows', 'pi_test', 5000, 'EUR')->>'already_paid')::text,
   'true',
@@ -181,6 +220,64 @@ select is(
   (select s.ends_at = s.started_at + interval '1 year' from public.subscriptions s join public.qr_codes q on q.id = s.qr_code_id where q.public_id = 'TGG-FLOW001'),
   true,
   'la période est une année calendaire'
+);
+
+-- Réparation d'une commande dont une seule des deux affectations a déjà été
+-- créée. Le TAGGO existant est conservé, seul le manquant est attribué.
+insert into public.orders (
+  id, customer_id, status, subtotal_cents, currency, paid_at, stripe_checkout_session_id
+) values (
+  'abababab-abab-4bab-8bab-abababababab',
+  '99999999-9999-4999-8999-000000000009',
+  'paid', 5000, 'EUR', now(), 'cs_test_partial'
+);
+insert into public.order_items (order_id, product_type, quantity)
+values ('abababab-abab-4bab-8bab-abababababab', 'apparel', 2);
+
+update public.qr_codes
+set lifecycle_status = 'assigned',
+    owner_id = '99999999-9999-4999-8999-000000000009',
+    assigned_at = now()
+where id = 'eeeeeeee-eeee-4eee-8eee-00000000000e';
+
+insert into public.taggo_assignments (
+  qr_code_id, order_id, assigned_user_id, status, assigned_by, assigned_at
+) values (
+  'eeeeeeee-eeee-4eee-8eee-00000000000e',
+  'abababab-abab-4bab-8bab-abababababab',
+  '99999999-9999-4999-8999-000000000009',
+  'assigned', 'stripe', now()
+);
+
+select is(has_function_privilege('service_role', 'public.list_paid_orders_pending_taggos(integer)', 'EXECUTE'), true,
+  'la file de réconciliation est réservée au service_role');
+select is(has_function_privilege('authenticated', 'public.list_paid_orders_pending_taggos(integer)', 'EXECUTE'), false,
+  'un client ne peut pas lire la file de réconciliation');
+select is(
+  (select taggo_quantity from public.list_paid_orders_pending_taggos(10) where order_id = 'abababab-abab-4bab-8bab-abababababab'),
+  2,
+  'la file identifie les commandes payées sous-équipées'
+);
+
+select is(
+  (public.reserve_taggos_for_paid_order('abababab-abab-4bab-8bab-abababababab', 2)->>'already_reserved')::text,
+  'false',
+  'une affectation partielle est complétée'
+);
+select is(
+  (select count(*)::integer from public.taggo_assignments where order_id = 'abababab-abab-4bab-8bab-abababababab' and status <> 'cancelled'),
+  2,
+  'la réparation atteint exactement la quantité commandée'
+);
+select is(
+  (public.reserve_taggos_for_paid_order('abababab-abab-4bab-8bab-abababababab', 2)->>'already_reserved')::text,
+  'true',
+  'le rejeu après réparation ne crée pas de doublon'
+);
+select is(
+  (select count(*)::integer from public.taggo_assignments where order_id = 'abababab-abab-4bab-8bab-abababababab' and status <> 'cancelled'),
+  2,
+  'le nombre d''affectations reste stable après rejeu'
 );
 
 -- ===========================================================================
