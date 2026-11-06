@@ -136,6 +136,7 @@ type OrderRow = {
   subtotal_cents: number | null
   currency: string | null
   stripe_checkout_session_id: string | null
+  stripe_payment_intent_id: string | null
   order_items: { quantity: number; product_type: string }[]
 }
 
@@ -146,7 +147,7 @@ export async function findOrderForPayment(
 ): Promise<OrderForPayment | null> {
   const { data, error } = await client
     .from('orders')
-    .select('id, status, subtotal_cents, currency, stripe_checkout_session_id, order_items(quantity, product_type)')
+    .select('id, status, subtotal_cents, currency, stripe_checkout_session_id, stripe_payment_intent_id, order_items(quantity, product_type)')
     .eq('id', orderId)
     .maybeSingle()
 
@@ -164,6 +165,7 @@ export async function findOrderForPayment(
     subtotalCents: row.subtotal_cents,
     currency: row.currency,
     stripeCheckoutSessionId: row.stripe_checkout_session_id,
+    stripePaymentIntentId: row.stripe_payment_intent_id,
     taggoQuantity,
   }
 }
