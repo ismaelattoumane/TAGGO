@@ -83,6 +83,26 @@ par `VITE_` :
 | `APP_URL` | domaine public : `success_url`, `cancel_url`, liens d'email, sitemap | 9 |
 | `EMAIL_PROVIDER_NAME` | provider d'emails transactionnels (vide = aucun envoi) | 10 |
 | `EMAIL_PROVIDER_API_KEY` | secret du provider d'emails | 10 |
+| `CRON_SECRET` | authentification des tâches planifiées Vercel | récupération webhook Stripe |
+
+## Récupération automatique des commandes payées
+
+Le webhook Stripe répond en HTTP 500 lorsqu'une attribution TAGGO échoue : Stripe
+peut ainsi retenter l'événement. Comme la fenêtre de retry Stripe est limitée,
+une tâche Vercel quotidienne complète le dispositif :
+
+- route : `GET /api/cron/reconcile-paid-orders` ;
+- fréquence : chaque jour à 08:00 UTC (déclarée dans `vercel.json`) ;
+- sécurité : en-tête `Authorization: Bearer <CRON_SECRET>`, comparé côté serveur ;
+- périmètre : uniquement les commandes `paid` dont le nombre de TAGGO attribués
+  est inférieur à la quantité textile commandée ;
+- idempotence : la même RPC de réservation conserve les affectations existantes
+  et ne crée que les unités manquantes.
+
+Configurer `CRON_SECRET` dans les variables d'environnement Vercel Preview et
+Production avec une valeur aléatoire longue, différente entre les deux
+environnements. Ne jamais la préfixer par `VITE_` ni la versionner. La tâche
+ne modifie jamais le statut de paiement et n'annule jamais une commande payée.
 
 ## Sitemap
 
