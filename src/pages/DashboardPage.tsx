@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { qrRepository } from '../features/qr/repository'
 import type { QrRecord } from '../features/qr/qrTypes'
@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/Badge/Badge'
 import { EmptyState } from '../components/ui/State/State'
 import { Eyebrow } from '../components/ui/Typography/Typography'
 import { SelectField } from '../components/ui/Field/Field'
-import { TaggoWordmark } from '../features/landing/TaggoWordmark'
+import { DashboardLayout } from '../components/DashboardLayout'
 import { usePageSeo } from '../lib/usePageSeo'
 
 const statusLabels: Record<QrRecord['status'], string> = {
@@ -20,9 +20,7 @@ const statusLabels: Record<QrRecord['status'], string> = {
 
 export function DashboardPage() {
   usePageSeo({ title: 'Tableau de bord — TAGGO', description: 'Tableau de bord de votre compte TAGGO : vos vêtements connectés et vos QR codes.', noindex: true })
-  const { profile, user, signOut } = useAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { profile, user } = useAuth()
   const [qrList, setQrList] = useState<QrRecord[]>([])
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'inactive' | 'archived'>('all')
   const [search, setSearch] = useState('')
@@ -52,61 +50,17 @@ export function DashboardPage() {
     return matchesFilter && matchesSearch
   })
 
-  const navItems = [
-    { href: '/dashboard', label: 'Dashboard', exact: true },
-    { href: '/dashboard/qr/new', label: 'QR Codes' },
-    { href: '/activate', label: 'Activer un TAGGO' },
-    { href: '/shop', label: 'Boutique' },
-    { href: '/cart', label: 'Panier' },
-    { href: '/dashboard/settings', label: 'Paramètres' },
-  ]
-
-  const isNavItemActive = (href: string, exact = false) => (
-    exact ? location.pathname === href : location.pathname.startsWith(href)
-  )
-
-  const handleSignOut = async () => {
-    await signOut()
-    navigate('/login')
-  }
-
   const getPublicQrUrl = (publicId: string) => {
     const baseUrl = window.location.origin
     return `${baseUrl}/t/${publicId}`
   }
 
   return (
-    <main className="dashboard-shell">
-      <aside className="sidebar">
-        <div className="brand-block">
-          <Link to="/dashboard" className="dashboard-brand" aria-label="TAGGO — Tableau de bord">
-            <TaggoWordmark className="dashboard-brand__logo" title="TAGGO" />
-          </Link>
-        </div>
-
-        <nav className="nav" aria-label="Navigation principale">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={`nav-item${isNavItemActive(item.href, item.exact) ? ' active' : ''}`}
-              aria-current={isNavItemActive(item.href, item.exact) ? 'page' : undefined}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <button type="button" className="ghost-button sidebar-sign-out" onClick={handleSignOut}>
-          Déconnexion
-        </button>
-      </aside>
-
-      <section className="main-panel">
+    <DashboardLayout>
         <header className="topbar">
           <div>
             <Eyebrow>Tableau de bord</Eyebrow>
-            <h1>Mes QR TAGGO</h1>
+            <h1>Mes TAGGO</h1>
             <p className="topbar-subtitle">
               {profile?.displayName ? `${profile.displayName} · ` : ''}
               {user?.email ?? 'Utilisateur'}
@@ -129,6 +83,10 @@ export function DashboardPage() {
             <strong>{qrList.filter((qr) => qr.status === 'draft').length}</strong>
           </article>
           <article className="stat-card">
+            <span>Archivés</span>
+            <strong>{qrList.filter((qr) => qr.status === 'archived').length}</strong>
+          </article>
+          <article className="stat-card">
             <span>Total TAGGO</span>
             <strong>{qrList.length}</strong>
           </article>
@@ -147,6 +105,10 @@ export function DashboardPage() {
             <Link to="/activate" className="quick-action">
               <strong>Activer un TAGGO</strong>
               <span>Lier un TAGGO à votre compte</span>
+            </Link>
+            <Link to="/dashboard/orders" className="quick-action">
+              <strong>Mes commandes</strong>
+              <span>Suivre vos achats et vos TAGGO</span>
             </Link>
             <Link to="/shop" className="quick-action">
               <strong>Découvrir la boutique</strong>
@@ -247,7 +209,6 @@ export function DashboardPage() {
             )}
           </div>
         </section>
-      </section>
-    </main>
+    </DashboardLayout>
   )
 }

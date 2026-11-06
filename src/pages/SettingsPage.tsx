@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { goBackSafely } from '../lib/navigation'
-import { isValidEmail, sanitizeText } from '../lib/validators'
+import { passwordUpdateErrorMessage } from '../features/auth/authErrors'
+import { isValidEmail, isValidPassword, sanitizeText } from '../lib/validators'
 import { usePageSeo } from '../lib/usePageSeo'
 
 export function SettingsPage() {
   usePageSeo({ title: 'Paramètres du compte — TAGGO', description: 'Paramètres de votre compte TAGGO.', noindex: true })
-  const { profile, profileLoading, updateProfile, requestEmailChange, mode, user, signOut } = useAuth()
+  const { profile, profileLoading, updateProfile, requestEmailChange, updatePassword, mode, user, signOut } = useAuth()
   const navigate = useNavigate()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -15,6 +16,10 @@ export function SettingsPage() {
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
   const [newEmail, setNewEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordMessage, setPasswordMessage] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -72,6 +77,25 @@ export function SettingsPage() {
       setMessage(error instanceof Error ? error.message : 'Impossible de demander le changement d’adresse email.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!isValidPassword(newPassword) || newPassword !== confirmPassword) {
+      setPasswordMessage('Les mots de passe doivent correspondre et respecter les règles de sécurité.')
+      return
+    }
+    try {
+      setPasswordSaving(true)
+      setPasswordMessage('')
+      await updatePassword(newPassword)
+      setPasswordMessage('Mot de passe mis à jour.')
+    } catch (error) {
+      setPasswordMessage(passwordUpdateErrorMessage(error))
+    } finally {
+      setPasswordSaving(false)
+      setNewPassword('')
+      setConfirmPassword('')
     }
   }
 
@@ -144,7 +168,38 @@ export function SettingsPage() {
                 </button>
               </div>
             ) : null}
-            <p style={{ marginBottom: '1rem', color: '#6d597a' }}>Le changement de mot de passe est géré par Supabase lorsque le flux est activé côté back-office.</p>
+            {mode === 'supabase' ? (
+              <div className="auth-form" style={{ marginBottom: '1rem' }}>
+                <label htmlFor="account-new-password">
+                  Nouveau mot de passe
+                  <input
+                    id="account-new-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    disabled={passwordSaving}
+                  />
+                </label>
+                <label htmlFor="account-confirm-password">
+                  Confirmer le mot de passe
+                  <input
+                    id="account-confirm-password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    disabled={passwordSaving}
+                  />
+                </label>
+                {passwordMessage ? <p role="status" className="form-error">{passwordMessage}</p> : null}
+                <button type="button" className="ghost-button" onClick={() => void handleChangePassword()} disabled={passwordSaving}>
+                  {passwordSaving ? 'Mise à jour...' : 'Changer le mot de passe'}
+                </button>
+              </div>
+            ) : (
+              <p style={{ marginBottom: '1rem', color: '#6d597a' }}>Le changement de mot de passe est disponible avec Supabase Auth.</p>
+            )}
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               <button type="button" className="ghost-button" onClick={handleSignOut}>Déconnexion</button>
             </div>

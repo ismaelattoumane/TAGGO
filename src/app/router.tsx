@@ -24,6 +24,8 @@ import { CartPage } from '../pages/CartPage'
 import { CheckoutPage } from '../pages/CheckoutPage'
 import { CheckoutCancelPage } from '../pages/CheckoutCancelPage'
 import { CheckoutSuccessPage } from '../pages/CheckoutSuccessPage'
+import { OrdersPage } from '../pages/OrdersPage'
+import { OrderDetailPage } from '../pages/OrderDetailPage'
 import { ProductPage } from '../pages/ProductPage'
 import { ShopPage } from '../pages/ShopPage'
 import { PasswordResetPage } from '../pages/PasswordResetPage'
@@ -76,6 +78,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <SettingsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'dashboard/orders',
+        element: (
+          <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'dashboard/orders/:orderId',
+        element: (
+          <ProtectedRoute>
+            <OrderDetailPage />
           </ProtectedRoute>
         ),
       },
