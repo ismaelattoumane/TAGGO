@@ -3,6 +3,7 @@ import { readServerEnv, isServerDatabaseConfigured } from '../_lib/env'
 import { getHeader, json } from '../_lib/http'
 import { createServerSupabase } from '../_lib/supabaseAdmin'
 import { reserveTaggos } from '../_lib/orderServer'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { ApiRequest, ApiResponse } from '../_lib/types'
 
 type PendingOrder = {
@@ -42,7 +43,7 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
     return json(503, { ok: false, error: 'database_unavailable' })
   }
 
-  let supabase
+  let supabase: SupabaseClient
   try {
     supabase = createServerSupabase(env)
   } catch {
