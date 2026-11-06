@@ -18,7 +18,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(61);
+select plan(64);
 
 -- Identifiants de fixtures.
 --   TAGGO     : le TAGGO acheté puis activé dans ce scénario.
@@ -248,6 +248,16 @@ insert into public.taggo_assignments (
   'abababab-abab-4bab-8bab-abababababab',
   '99999999-9999-4999-8999-000000000009',
   'assigned', 'stripe', now()
+);
+
+select is(has_function_privilege('service_role', 'public.list_paid_orders_pending_taggos(integer)', 'EXECUTE'), true,
+  'la file de réconciliation est réservée au service_role');
+select is(has_function_privilege('authenticated', 'public.list_paid_orders_pending_taggos(integer)', 'EXECUTE'), false,
+  'un client ne peut pas lire la file de réconciliation');
+select is(
+  (select taggo_quantity from public.list_paid_orders_pending_taggos(10) where order_id = 'abababab-abab-4bab-8bab-abababababab'),
+  2,
+  'la file identifie les commandes payées sous-équipées'
 );
 
 select is(
