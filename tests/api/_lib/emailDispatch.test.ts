@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { dispatchTransactionalEmail, emailDedupeKey, type EmailDispatchDeps } from './emailDispatch'
-import { buildOrderConfirmedJob, buildOrderShippedJob, buildPasswordResetJob } from './emailTriggers'
-import { createMemoryEmailProvider, DisabledEmailProvider } from '../../src/emails/provider'
-import type { OrderLineDraft } from '../../src/emails/templates/lineItems'
-import type { EmailType } from '../../src/emails/emailTypes'
+import { dispatchTransactionalEmail, emailDedupeKey, type EmailDispatchDeps } from '../../../api/_lib/emailDispatch'
+import { buildOrderConfirmedJob, buildOrderShippedJob, buildPasswordResetJob } from '../../../api/_lib/emailTriggers'
+import { createMemoryEmailProvider, DisabledEmailProvider } from '../../../src/emails/provider'
+import type { OrderLineDraft } from '../../../src/emails/templates/lineItems'
+import type { EmailType } from '../../../src/emails/emailTypes'
 
 /**
  * ÉTAPE 10 — Idempotence des emails transactionnels.
