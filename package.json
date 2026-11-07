@@ -32,6 +32,9 @@
     "stripe": "^18.5.0",
     "three": "^0.186.0"
   },
+  "overrides": {
+    "qs": "6.17.1"
+  },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
