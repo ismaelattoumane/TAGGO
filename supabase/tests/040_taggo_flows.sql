@@ -234,19 +234,11 @@ insert into public.orders (
 insert into public.order_items (order_id, product_type, quantity)
 values ('abababab-abab-4bab-8bab-abababababab', 'apparel', 2);
 
-update public.qr_codes
-set lifecycle_status = 'assigned',
-    owner_id = '99999999-9999-4999-8999-000000000009',
-    assigned_at = now()
-where id = 'eeeeeeee-eeee-4eee-8eee-00000000000e';
-
-insert into public.taggo_assignments (
-  qr_code_id, order_id, assigned_user_id, status, assigned_by, assigned_at
-) values (
-  'eeeeeeee-eeee-4eee-8eee-00000000000e',
+-- Crée une première affectation via la fonction serveur.
+-- La commande est volontairement sous-équipée : 1 TAGGO pour 2 commandés.
+select public.reserve_taggos_for_paid_order(
   'abababab-abab-4bab-8bab-abababababab',
-  '99999999-9999-4999-8999-000000000009',
-  'assigned', 'stripe', now()
+  1
 );
 
 select is(has_function_privilege('service_role', 'public.list_paid_orders_pending_taggos(integer)', 'EXECUTE'), true,
