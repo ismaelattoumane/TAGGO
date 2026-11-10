@@ -86,13 +86,13 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
 
   const result = await setTaggoAutoRenew(supabase, { qrId, ownerId: user.id, autoRenew })
 
-  if (!result.ok) {
-    return json(STATUS_BY_FAILURE[result.reason], {
-      ok: false,
-      code: result.reason,
-      message: FAILURE_MESSAGE[result.reason],
-    })
+  if (result.ok) {
+    return json(200, { ok: true, qrId, autoRenew })
   }
 
-  return json(200, { ok: true, qrId, autoRenew })
+  return json(STATUS_BY_FAILURE[result.reason], {
+    ok: false,
+    code: result.reason,
+    message: FAILURE_MESSAGE[result.reason],
+  })
 }

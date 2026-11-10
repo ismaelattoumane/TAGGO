@@ -79,18 +79,18 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
   const qrId = typeof req.query?.qr_id === 'string' ? req.query.qr_id.trim() : ''
   const outcome = await requestTaggoRenewal(supabase, { qrId, ownerId: user.id })
 
-  if (!outcome.ok) {
-    return json(STATUS_BY_FAILURE[outcome.reason], {
-      ok: false,
-      code: outcome.reason,
-      message: FAILURE_MESSAGE[outcome.reason],
+  if (outcome.ok) {
+    return json(200, {
+      ok: true,
+      taggoId: outcome.taggoId,
+      startsAt: outcome.startsAt,
+      endsAt: outcome.endsAt,
     })
   }
 
-  return json(200, {
-    ok: true,
-    taggoId: outcome.taggoId,
-    startsAt: outcome.startsAt,
-    endsAt: outcome.endsAt,
+  return json(STATUS_BY_FAILURE[outcome.reason], {
+    ok: false,
+    code: outcome.reason,
+    message: FAILURE_MESSAGE[outcome.reason],
   })
 }

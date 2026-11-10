@@ -102,26 +102,26 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
 
   const result = await getTaggoScanStats(supabase, { qrId, ownerId: user.id, days })
 
-  if (!result.ok) {
-    return json(STATUS_BY_FAILURE[result.reason], {
-      ok: false,
-      code: result.reason,
-      message: FAILURE_MESSAGE[result.reason],
+  if (result.ok) {
+    return json(200, {
+      ok: true,
+      qrId,
+      days: result.stats.days,
+      bucket: result.stats.bucket,
+      total: result.stats.total,
+      today: result.stats.today,
+      last7: result.stats.last7,
+      last30: result.stats.last30,
+      series: result.stats.series,
+      recent: result.stats.recent,
+      // Périodes réellement acceptées : le client n'invente pas les siennes.
+      availablePeriods: [...SCAN_PERIOD_DAYS],
     })
   }
 
-  return json(200, {
-    ok: true,
-    qrId,
-    days: result.stats.days,
-    bucket: result.stats.bucket,
-    total: result.stats.total,
-    today: result.stats.today,
-    last7: result.stats.last7,
-    last30: result.stats.last30,
-    series: result.stats.series,
-    recent: result.stats.recent,
-    // Périodes réellement acceptées : le client n'invente pas les siennes.
-    availablePeriods: [...SCAN_PERIOD_DAYS],
+  return json(STATUS_BY_FAILURE[result.reason], {
+    ok: false,
+    code: result.reason,
+    message: FAILURE_MESSAGE[result.reason],
   })
 }

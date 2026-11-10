@@ -84,13 +84,13 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
     renewalAvailable: RENEWAL_PRICE_CONFIGURED,
   })
 
-  if (!result.ok) {
-    return json(STATUS_BY_FAILURE[result.reason], {
-      ok: false,
-      code: result.reason,
-      message: FAILURE_MESSAGE[result.reason],
-    })
+  if (result.ok) {
+    return json(200, { ok: true, qrId, subscription: result.state })
   }
 
-  return json(200, { ok: true, qrId, subscription: result.state })
+  return json(STATUS_BY_FAILURE[result.reason], {
+    ok: false,
+    code: result.reason,
+    message: FAILURE_MESSAGE[result.reason],
+  })
 }
