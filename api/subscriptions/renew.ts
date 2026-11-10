@@ -88,9 +88,10 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
     })
   }
 
-  return json(STATUS_BY_FAILURE[outcome.reason], {
+  const failed = outcome as { ok: false; reason: keyof typeof STATUS_BY_FAILURE }
+  return json(STATUS_BY_FAILURE[failed.reason], {
     ok: false,
-    code: outcome.reason,
-    message: FAILURE_MESSAGE[outcome.reason],
+    code: failed.reason,
+    message: FAILURE_MESSAGE[failed.reason],
   })
 }

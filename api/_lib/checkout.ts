@@ -67,8 +67,7 @@ export async function createCheckoutSession(
 
   const pricing = await priceCart(items, deps.catalog)
   if (!pricing.ok) {
-    const failure = pricing
-    return { ok: false, code: failure.code }
+    return { ok: false, code: (pricing as { ok: false; code: PaymentErrorCode }).code }
   }
 
   const cart = pricing.cart
@@ -124,8 +123,7 @@ export function checkoutResponse(outcome: CheckoutOutcome): ApiResponse {
       },
     }
   }
-  const failed = outcome
-  return failure(failed.code)
+  return failure((outcome as { ok: false; code: PaymentErrorCode }).code)
 }
 
 export { MAX_PAYMENT_LINE_QUANTITY }

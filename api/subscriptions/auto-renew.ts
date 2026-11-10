@@ -90,9 +90,10 @@ export default async function handler(req: ApiRequest): Promise<ApiResponse> {
     return json(200, { ok: true, qrId, autoRenew })
   }
 
-  return json(STATUS_BY_FAILURE[result.reason], {
+  const failed = result as { ok: false; reason: keyof typeof STATUS_BY_FAILURE }
+  return json(STATUS_BY_FAILURE[failed.reason], {
     ok: false,
-    code: result.reason,
-    message: FAILURE_MESSAGE[result.reason],
+    code: failed.reason,
+    message: FAILURE_MESSAGE[failed.reason],
   })
 }
