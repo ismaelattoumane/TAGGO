@@ -1,18 +1,14 @@
 {
-  "rewrites": [
-    {
-      "source": "/sitemap.xml",
-      "destination": "/api/sitemap"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
+  "functions": {
+    "api/**/*.{ts,js,mjs}": {
+      "excludeFiles": "{**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx,**/_lib/**/__tests__/**}"
     }
+  },
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "crons": [
-    {
-      "path": "/api/cron/reconcile-paid-orders",
-      "schedule": "0 8 * * *"
-    }
+    { "path": "/api/cron/reconcile-paid-orders", "schedule": "0 8 * * *" }
   ]
 }
