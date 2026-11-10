@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc -b --pretty false",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
+    "build:check": "tsc -b && vite build",
     "lint": "oxlint .",
     "test": "vitest run",
     "test:db": "bash scripts/db-test.sh",

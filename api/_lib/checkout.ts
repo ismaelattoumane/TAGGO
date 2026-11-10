@@ -110,16 +110,18 @@ function buildLineName(name: string, size: string | null, color: string | null):
 }
 
 export function checkoutResponse(outcome: CheckoutOutcome): ApiResponse {
-  if (!outcome.ok) return failure(outcome.code)
-  return {
-    status: 200,
-    body: {
-      ok: true,
-      orderId: outcome.orderId,
-      sessionId: outcome.sessionId,
-      url: outcome.url,
-    },
+  if (outcome.ok) {
+    return {
+      status: 200,
+      body: {
+        ok: true,
+        orderId: outcome.orderId,
+        sessionId: outcome.sessionId,
+        url: outcome.url,
+      },
+    }
   }
+  return failure(outcome.code)
 }
 
 export { MAX_PAYMENT_LINE_QUANTITY }
