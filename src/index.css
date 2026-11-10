@@ -226,24 +226,11 @@ svg {
   font-weight: 600;
 }
 
-.qr-row-header,
-.qr-row-actions,
 .detail-header,
 .detail-actions {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.qr-destination {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-}
-
-.qr-destination > span {
-  color: var(--muted);
-  font-weight: 700;
 }
 
 
@@ -529,9 +516,6 @@ svg {
     min-height: 3rem;
   }
 
-  .stat-card strong {
-    font-size: 1.6rem;
-  }
 }
 
 /* ============================================================
