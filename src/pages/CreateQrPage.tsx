@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { DashboardLayout } from '../components/DashboardLayout'
+import { Eyebrow } from '../components/ui/Typography/Typography'
 import { useAuth } from '../context/AuthContext'
-import { goBackSafely } from '../lib/navigation'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
 import { qrRepository } from '../features/qr/repository'
 import { usePageSeo } from '../lib/usePageSeo'
@@ -43,17 +44,25 @@ export function CreateQrPage() {
   }
 
   return (
-    <main className="settings-shell">
-      <section className="settings-card" style={{ maxWidth: 700 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+    <DashboardLayout>
+      <header className="topbar">
+        <div>
+          <Eyebrow>Créer un TAGGO</Eyebrow>
+          <h1>Nouveau QR</h1>
+          <p className="topbar-subtitle">Ajoutez un nouveau QR code à votre espace.</p>
+        </div>
+        <Link to="/dashboard" className="ghost-button">Retour au tableau de bord</Link>
+      </header>
+
+      <section className="panel">
+        <div className="panel-header">
           <div>
-            <p className="eyebrow">Créer un QR</p>
-            <h1>Nouveau QR</h1>
+            <p className="eyebrow">Configuration</p>
+            <h2>Détails du QR</h2>
           </div>
-          <button type="button" className="ghost-button" onClick={() => goBackSafely(navigate, '/dashboard')}>Retour</button>
         </div>
 
-        <div className="auth-form" style={{ marginTop: '1.5rem' }}>
+        <div className="auth-form" style={{ maxWidth: 700 }}>
           <label htmlFor="qr-create-title">
             Nom du QR
             <input
@@ -84,11 +93,13 @@ export function CreateQrPage() {
             </p>
           ) : null}
 
-          <button type="button" className="primary-button" onClick={() => void handleCreate()} disabled={isLoading}>
-            {isLoading ? 'Création...' : 'Créer le QR'}
-          </button>
+          <div>
+            <button type="button" className="primary-button" onClick={() => void handleCreate()} disabled={isLoading}>
+              {isLoading ? 'Création...' : 'Créer le QR'}
+            </button>
+          </div>
         </div>
       </section>
-    </main>
+    </DashboardLayout>
   )
 }

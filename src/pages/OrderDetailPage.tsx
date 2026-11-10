@@ -43,7 +43,7 @@ export function OrderDetailPage() {
           <h1>{order ? `Commande ${shortOrderRef(order.id)}` : 'Commande'}</h1>
           {order ? <p className="topbar-subtitle">Passée le {formatOrderDate(order.createdAt)}</p> : null}
         </div>
-        <Link to="/dashboard/orders" className="ghost-button">Retour aux commandes</Link>
+        <Link to="/dashboard" className="ghost-button">Retour au tableau de bord</Link>
       </header>
 
       <section className="panel" aria-busy={loading}>

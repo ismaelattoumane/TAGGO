@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { goBackSafely } from '../lib/navigation'
+import { DashboardLayout } from '../components/DashboardLayout'
+import { Eyebrow } from '../components/ui/Typography/Typography'
 import { isValidDestinationUrl, sanitizeText } from '../lib/validators'
 import { qrRepository } from '../features/qr/repository'
 import { TaggoAnalyticsPanel } from '../features/analytics/TaggoAnalyticsPanel'
@@ -158,30 +159,33 @@ export function QrDetailPage() {
 
   if (loading) {
     return (
-      <main className="settings-shell">
-        <section className="settings-card detail-card">
-          <p>Chargement...</p>
+      <DashboardLayout>
+        <section className="panel" aria-busy="true">
+          <p role="status">Chargement...</p>
         </section>
-      </main>
+      </DashboardLayout>
     )
   }
 
   return (
-    <main className="settings-shell">
-      <section className="settings-card detail-card">
-        <div className="detail-header">
-          <div>
-            <p className="eyebrow">QR detail</p>
-            <h1>{publicId}</h1>
-          </div>
-          <button type="button" className="ghost-button" onClick={() => goBackSafely(navigate, '/dashboard')}>Retour</button>
+    <DashboardLayout>
+      <header className="topbar">
+        <div>
+          <Eyebrow>Détail du TAGGO</Eyebrow>
+          <h1>{publicId || 'TAGGO'}</h1>
+          <p className="topbar-subtitle">Configurez votre QR code, son profil public et son abonnement.</p>
         </div>
+        <Link to="/dashboard" className="ghost-button">Retour au tableau de bord</Link>
+      </header>
 
-        <section className="qr-code-panel" aria-labelledby="qr-code-title">
+      <section className="panel">
+        <div className="panel-header">
           <div>
             <p className="eyebrow">Ton QR TAGGO</p>
-            <h2 id="qr-code-title">Scanne pour ouvrir ta page publique</h2>
+            <h2>Scanne pour ouvrir ta page publique</h2>
           </div>
+        </div>
+        <div className="qr-code-panel" aria-labelledby="qr-code-title">
           {qrPng ? <img className="qr-code-image" src={qrPng} alt={`QR code de ${publicId}`} /> : <p role="status">Génération du QR code...</p>}
           <strong>{publicId}</strong>
           <p>Ce QR ouvre ta page TAGGO publique.</p>
@@ -192,16 +196,27 @@ export function QrDetailPage() {
             <button type="button" className="ghost-button" onClick={() => downloadFile(qrSvg, `TAGGO-${publicId}.svg`, 'image/svg+xml')} disabled={!qrSvg}>
               Télécharger SVG
             </button>
-            <CopyButton text={buildPublicTaggoUrl(publicId)} label="Copier le lien" />
-            <a className="link-button" href={buildPublicTaggoUrl(publicId)} target="_blank" rel="noreferrer">
-              Ouvrir la page
-            </a>
+            <CopyButton text={publicId ? buildPublicTaggoUrl(publicId) : ''} label="Copier le lien" />
+            {publicId ? (
+              <a className="link-button" href={buildPublicTaggoUrl(publicId)} target="_blank" rel="noreferrer">
+                Ouvrir la page
+              </a>
+            ) : null}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {qrId ? <TaggoSubscriptionPanel qrId={qrId} publicId={publicId} /> : null}
+      {qrId ? <TaggoSubscriptionPanel qrId={qrId} publicId={publicId} /> : null}
 
-        {qrId ? <TaggoAnalyticsPanel qrId={qrId} publicId={publicId} /> : null}
+      {qrId ? <TaggoAnalyticsPanel qrId={qrId} publicId={publicId} /> : null}
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Configuration</p>
+            <h2>Détails et profil public</h2>
+          </div>
+        </div>
 
         <div className="auth-form detail-form">
           <label htmlFor="qr-title">
@@ -282,7 +297,7 @@ export function QrDetailPage() {
           {showDeleteConfirm && (
             <div className="delete-confirmation">
               <p className="delete-confirmation-title">
-                Confirmer la suppression?
+                Confirmer la suppression ?
               </p>
               <p className="delete-confirmation-copy">
                 Cette action est irréversible.
@@ -303,6 +318,6 @@ export function QrDetailPage() {
           )}
         </div>
       </section>
-    </main>
+    </DashboardLayout>
   )
 }

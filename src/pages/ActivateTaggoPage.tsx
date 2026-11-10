@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Alert } from '../components/Alert'
+import { DashboardLayout } from '../components/DashboardLayout'
+import { Eyebrow } from '../components/ui/Typography/Typography'
 import { useAuth } from '../context/AuthContext'
 import { qrRepository } from '../features/qr/repository'
 import { isValidTagCode, normalizeTagCode } from '../features/qr/tagCode'
@@ -46,14 +48,28 @@ export function ActivateTaggoPage() {
   }
 
   return (
-    <main className="public-page">
-      <section className="public-card public-state-card">
-        <p className="public-kicker">TAGGO / ACTIVATION</p>
-        <h1>Activation de votre TAGGO</h1>
+    <DashboardLayout>
+      <header className="topbar">
+        <div>
+          <Eyebrow>Activation</Eyebrow>
+          <h1>Activer mon TAGGO</h1>
+          <p className="topbar-subtitle">Liez un TAGGO à votre compte avec son code.</p>
+        </div>
+        <Link to="/dashboard" className="ghost-button">Retour au tableau de bord</Link>
+      </header>
+
+      <section className="panel">
+        <div className="panel-header">
+          <div>
+            <p className="eyebrow">Code TAGGO</p>
+            <h2>{tag ? 'Activation en cours' : 'Saisir un code'}</h2>
+          </div>
+        </div>
+
         {tag ? (
           error ? <Alert type="error">{message}</Alert> : <p role="status">{message}</p>
         ) : (
-          <form className="auth-form" onSubmit={handleSubmit}>
+          <form className="auth-form" onSubmit={handleSubmit} style={{ maxWidth: 520 }}>
             <label htmlFor="taggo-activation-code">
               Code TAGGO
               <input
@@ -68,10 +84,12 @@ export function ActivateTaggoPage() {
               />
             </label>
             {error ? <Alert type="error">{message}</Alert> : null}
-            <button type="submit" className="primary-button">Activer le TAGGO</button>
+            <div>
+              <button type="submit" className="primary-button">Activer le TAGGO</button>
+            </div>
           </form>
         )}
       </section>
-    </main>
+    </DashboardLayout>
   )
 }

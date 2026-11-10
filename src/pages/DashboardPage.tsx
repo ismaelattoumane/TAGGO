@@ -9,6 +9,7 @@ import { EmptyState } from '../components/ui/State/State'
 import { Eyebrow } from '../components/ui/Typography/Typography'
 import { SelectField } from '../components/ui/Field/Field'
 import { DashboardLayout } from '../components/DashboardLayout'
+import { QrThumb } from '../components/QrThumb'
 import { usePageSeo } from '../lib/usePageSeo'
 
 const statusLabels: Record<QrRecord['status'], string> = {
@@ -173,6 +174,7 @@ export function DashboardPage() {
             ) : (
               filteredQrList.map((qr) => (
                 <article key={qr.id} role="listitem" className="qr-row">
+                  <QrThumb publicId={qr.publicId} />
                   <div className="qr-row-header">
                     <div>
                       <p className="qr-id">{qr.publicId}</p>
