@@ -30,22 +30,36 @@ function toProfile(row: SupabaseProfile): TaggoProfile {
   }
 }
 
+const PROFILE_COLUMNS = 'id, email, first_name, last_name, display_name, full_name, created_at, updated_at'
+const PROFILE_COLUMNS_FALLBACK = 'id, email, full_name, avatar_url, created_at, updated_at'
+
+function isMissingColumnError(error: { code?: string; message?: string } | null | undefined): boolean {
+  return error?.code === '42703' || /column .* does not exist/i.test(error?.message ?? '')
+}
+
 export class SupabaseProfileRepository implements ProfileRepository {
   async getCurrentProfile(): Promise<TaggoProfile | null> {
     const client = requireClient()
     const { data: authData, error: authError } = await client.auth.getUser()
     if (authError || !authData.user) return null
 
-    const { data, error } = await client
+    let { data, error } = await client
       .from('profiles')
-      .select('id, email, first_name, last_name, display_name, full_name, created_at, updated_at')
+      .select(PROFILE_COLUMNS)
       .eq('id', authData.user.id)
       .maybeSingle()
+    if (isMissingColumnError(error)) {
+      ;({ data, error } = await client
+        .from('profiles')
+        .select(PROFILE_COLUMNS_FALLBACK)
+        .eq('id', authData.user.id)
+        .maybeSingle())
+    }
     if (error) throw error
     if (data) return toProfile(data as SupabaseProfile)
 
     const displayName = authData.user.user_metadata?.full_name ?? ''
-    const { data: created, error: insertError } = await client
+    let insertResult = await client
       .from('profiles')
       .insert({
         id: authData.user.id,
@@ -53,10 +67,21 @@ export class SupabaseProfileRepository implements ProfileRepository {
         full_name: displayName || null,
         display_name: displayName || null,
       })
-      .select('id, email, first_name, last_name, display_name, full_name, created_at, updated_at')
+      .select(PROFILE_COLUMNS)
       .single()
-    if (insertError) throw insertError
-    return toProfile(created as SupabaseProfile)
+    if (isMissingColumnError(insertResult.error)) {
+      insertResult = await client
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: authData.user.email ?? '',
+          full_name: displayName || null,
+        })
+        .select(PROFILE_COLUMNS_FALLBACK)
+        .single()
+    }
+    if (insertResult.error) throw insertResult.error
+    return toProfile(insertResult.data as SupabaseProfile)
   }
 
   async updateCurrentProfile(input: UpdateTaggoProfileInput): Promise<TaggoProfile | null> {
@@ -65,7 +90,7 @@ export class SupabaseProfileRepository implements ProfileRepository {
     if (authError || !authData.user) return null
 
     const fullName = [input.firstName, input.lastName].filter(Boolean).join(' ')
-    const { data, error } = await client
+    let result = await client
       .from('profiles')
       .upsert({
         id: authData.user.id,
@@ -74,9 +99,19 @@ export class SupabaseProfileRepository implements ProfileRepository {
         display_name: input.displayName,
         full_name: fullName || null,
       }, { onConflict: 'id' })
-      .select('id, email, first_name, last_name, display_name, full_name, created_at, updated_at')
+      .select(PROFILE_COLUMNS)
       .single()
-    if (error) throw error
-    return toProfile(data as SupabaseProfile)
+    if (isMissingColumnError(result.error)) {
+      result = await client
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          full_name: (input.displayName || fullName) || null,
+        }, { onConflict: 'id' })
+        .select(PROFILE_COLUMNS_FALLBACK)
+        .single()
+    }
+    if (result.error) throw result.error
+    return toProfile(result.data as SupabaseProfile)
   }
 }
