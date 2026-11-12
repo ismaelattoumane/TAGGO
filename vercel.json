@@ -1,10 +1,8 @@
 {
-  "functions": {
-    "api/**/*.{ts,js,mjs}": {
-      "excludeFiles": "{**/*.test.ts,**/*.test.tsx,**/*.spec.ts,**/*.spec.tsx,**/_lib/**/__tests__/**}"
-    }
-  },
   "rewrites": [
+    { "source": "/api/stripe/:action", "destination": "/api/stripe" },
+    { "source": "/api/subscriptions/:action", "destination": "/api/subscriptions" },
+    { "source": "/api/analytics/:action", "destination": "/api/analytics" },
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
