@@ -10,7 +10,7 @@ import {
   SUBSCRIPTION_PERIOD_MONTHS,
   TAGGO_PLAN_LABEL,
   toTaggoSubscriptionState,
-} from './subscriptionServer'
+} from '../../../api/_lib/subscriptionServer'
 
 /**
  * ÉTAPE 12 — Tests de la logique serveur des abonnements TAGGO.

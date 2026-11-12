@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createCheckoutSession } from './checkout'
-import type { CatalogLookup, ServerCatalogEntry } from './catalogTypes'
-import type { ApiResponse, StripeGateway } from './types'
+import { createCheckoutSession } from '../../../api/_lib/checkout'
+import type { CatalogLookup, ServerCatalogEntry } from '../../../api/_lib/catalogTypes'
+import type { ApiResponse, StripeGateway } from '../../../api/_lib/types'
 
 const VARIANT_A = '11111111-1111-4111-8111-111111111111'
 
@@ -187,7 +187,7 @@ describe('createCheckoutSession', () => {
 
 describe('checkoutResponse', () => {
   it('renvoie un body minimal sans secret', async () => {
-    const { checkoutResponse } = await import('./checkout')
+    const { checkoutResponse } = await import('../../../api/_lib/checkout')
     const response: ApiResponse = checkoutResponse({ ok: false, code: 'stripe_unavailable' })
 
     expect(response.status).toBe(503)

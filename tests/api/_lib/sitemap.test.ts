@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import vercelConfigFile from '../../vercel.json'
-import { buildSitemapXml, STATIC_SITEMAP_ENTRIES, productSitemapEntries } from './sitemap'
-import handler from '../sitemap'
-import type { ApiRequest } from './types'
+import vercelConfigFile from '../../../vercel.json'
+import { buildSitemapXml, STATIC_SITEMAP_ENTRIES, productSitemapEntries } from '../../../api/_lib/sitemap'
+import handler from '../../../api/sitemap'
+import type { ApiRequest } from '../../../api/_lib/types'
 
 /**
  * Étape 10 — Sitemap XML.

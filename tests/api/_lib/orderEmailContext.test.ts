@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { describe, expect, it, vi } from 'vitest'
-import { loadOrderEmailContext } from './orderEmailContext'
+import { loadOrderEmailContext } from '../../../api/_lib/orderEmailContext'
 
 function makeClient(confirmedRecipient: string | null) {
   const order = {

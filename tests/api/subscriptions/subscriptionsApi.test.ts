@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ApiRequest, ApiResponse } from '../_lib/types'
-import { RENEWAL_PRICE_CONFIGURED } from '../_lib/subscriptionServer'
+import type { ApiRequest, ApiResponse } from '../../../api/_lib/types'
+import { RENEWAL_PRICE_CONFIGURED } from '../../../api/_lib/subscriptionServer'
 
 /**
  * ÉTAPE 12 — Tests des endpoints d'abonnement.
@@ -14,7 +14,7 @@ const getTaggoSubscriptionState = vi.fn()
 const requestTaggoRenewal = vi.fn()
 const setTaggoAutoRenew = vi.fn()
 
-vi.mock('../_lib/env', () => ({
+vi.mock('../../../api/_lib/env', () => ({
   readServerEnv: () => ({
     supabaseUrl: 'https://project.supabase.co',
     supabaseServiceRoleKey: 'service-role-test-key',
@@ -26,7 +26,7 @@ vi.mock('../_lib/env', () => ({
   isStripeConfigured: () => true,
 }))
 
-vi.mock('../_lib/supabaseAdmin', () => ({
+vi.mock('../../../api/_lib/supabaseAdmin', () => ({
   createServerSupabase: () => ({}),
   extractBearerToken: (header?: string | string[]) => {
     const value = Array.isArray(header) ? header[0] : header
@@ -35,8 +35,8 @@ vi.mock('../_lib/supabaseAdmin', () => ({
   resolveAuthenticatedUser: () => resolveAuthenticatedUser(),
 }))
 
-vi.mock('../_lib/subscriptionServer', async () => {
-  const actual = await vi.importActual<typeof import('../_lib/subscriptionServer')>('../_lib/subscriptionServer')
+vi.mock('../../../api/_lib/subscriptionServer', async () => {
+  const actual = await vi.importActual<typeof import('../../../api/_lib/subscriptionServer')>('../../../api/_lib/subscriptionServer')
   return {
     ...actual,
     getTaggoSubscriptionState: (client: unknown, input: unknown) => getTaggoSubscriptionState(client, input),
@@ -88,7 +88,7 @@ afterEach(() => {
 
 describe('GET /api/subscriptions/taggo', () => {
   it('lit l’état avec le propriétaire déduit du JWT', async () => {
-    const { default: handler } = await import('./taggo')
+    const { default: handler } = await import('../../../api/subscriptions/taggo')
 
     const response = await handler(request())
 
@@ -100,7 +100,7 @@ describe('GET /api/subscriptions/taggo', () => {
   })
 
   it('n’accepte jamais un owner_id fourni par l’URL', async () => {
-    const { default: handler } = await import('./taggo')
+    const { default: handler } = await import('../../../api/subscriptions/taggo')
 
     await handler(request({ query: { qr_id: QR_ID, owner_id: OTHER_USER_ID } }))
 
@@ -110,7 +110,7 @@ describe('GET /api/subscriptions/taggo', () => {
   })
 
   it('refuse une requête sans JWT', async () => {
-    const { default: handler } = await import('./taggo')
+    const { default: handler } = await import('../../../api/subscriptions/taggo')
     resolveAuthenticatedUser.mockResolvedValue(null)
 
     const response = await handler(request({ headers: {} }))
@@ -121,7 +121,7 @@ describe('GET /api/subscriptions/taggo', () => {
   })
 
   it('refuse un TAGGO appartenant à quelqu’un d’autre', async () => {
-    const { default: handler } = await import('./taggo')
+    const { default: handler } = await import('../../../api/subscriptions/taggo')
     getTaggoSubscriptionState.mockResolvedValue({ ok: false, reason: 'not_owner' })
 
     const response = await handler(request())
@@ -131,7 +131,7 @@ describe('GET /api/subscriptions/taggo', () => {
   })
 
   it('refuse une méthode autre que GET', async () => {
-    const { default: handler } = await import('./taggo')
+    const { default: handler } = await import('../../../api/subscriptions/taggo')
 
     const response = await handler(request({ method: 'POST' }))
 
@@ -139,7 +139,7 @@ describe('GET /api/subscriptions/taggo', () => {
   })
 
   it('n’expose ni identifiant Stripe ni montant', async () => {
-    const { default: handler } = await import('./taggo')
+    const { default: handler } = await import('../../../api/subscriptions/taggo')
 
     const response = await handler(request())
     const serialized = JSON.stringify(response.body)
@@ -149,7 +149,7 @@ describe('GET /api/subscriptions/taggo', () => {
   })
 
   it('ne renvoie jamais un abonnement actif en cas de panne', async () => {
-    const { default: handler } = await import('./taggo')
+    const { default: handler } = await import('../../../api/subscriptions/taggo')
     getTaggoSubscriptionState.mockResolvedValue({ ok: false, reason: 'subscription_unavailable' })
 
     const response = await handler(request())
@@ -161,7 +161,7 @@ describe('GET /api/subscriptions/taggo', () => {
 
 describe('POST /api/subscriptions/renew', () => {
   it('refuse tant qu’aucun tarif n’est configuré', async () => {
-    const { default: handler } = await import('./renew')
+    const { default: handler } = await import('../../../api/subscriptions/renew')
     requestTaggoRenewal.mockResolvedValue({ ok: false, reason: 'renewal_unavailable' })
 
     const response = await handler(request({ method: 'POST' }))
@@ -171,7 +171,7 @@ describe('POST /api/subscriptions/renew', () => {
   })
 
   it('ne déclare jamais un paiement réussi', async () => {
-    const { default: handler } = await import('./renew')
+    const { default: handler } = await import('../../../api/subscriptions/renew')
     requestTaggoRenewal.mockResolvedValue({ ok: false, reason: 'renewal_unavailable' })
 
     const response = await handler(request({ method: 'POST' }))
@@ -185,7 +185,7 @@ describe('POST /api/subscriptions/renew', () => {
   })
 
   it('refuse une requête sans JWT', async () => {
-    const { default: handler } = await import('./renew')
+    const { default: handler } = await import('../../../api/subscriptions/renew')
     resolveAuthenticatedUser.mockResolvedValue(null)
 
     const response = await handler(request({ method: 'POST', headers: {} }))
@@ -195,7 +195,7 @@ describe('POST /api/subscriptions/renew', () => {
   })
 
   it('refuse une méthode autre que POST', async () => {
-    const { default: handler } = await import('./renew')
+    const { default: handler } = await import('../../../api/subscriptions/renew')
 
     const response = await handler(request({ method: 'GET' }))
 
@@ -206,7 +206,7 @@ describe('POST /api/subscriptions/renew', () => {
 
 describe('POST /api/subscriptions/auto-renew', () => {
   it('enregistre la préférence avec le propriétaire du JWT', async () => {
-    const { default: handler } = await import('./auto-renew')
+    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
     setTaggoAutoRenew.mockResolvedValue({ ok: true })
 
     const response = await handler(
@@ -221,7 +221,7 @@ describe('POST /api/subscriptions/auto-renew', () => {
   })
 
   it('accepte la désactivation', async () => {
-    const { default: handler } = await import('./auto-renew')
+    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
     setTaggoAutoRenew.mockResolvedValue({ ok: true })
 
     await handler(request({ method: 'POST', query: { qr_id: QR_ID, enabled: 'false' } }))
@@ -230,7 +230,7 @@ describe('POST /api/subscriptions/auto-renew', () => {
   })
 
   it('refuse une valeur qui n’est pas true/false', async () => {
-    const { default: handler } = await import('./auto-renew')
+    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
 
     for (const enabled of ['oui', '1', 'yes', '']) {
       const response = await handler(
@@ -242,7 +242,7 @@ describe('POST /api/subscriptions/auto-renew', () => {
   })
 
   it('n’accepte pas d’activer le renouvellement pour le TAGGO de quelqu’un d’autre', async () => {
-    const { default: handler } = await import('./auto-renew')
+    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
     setTaggoAutoRenew.mockResolvedValue({ ok: false, reason: 'not_owner' })
 
     const response = await handler(

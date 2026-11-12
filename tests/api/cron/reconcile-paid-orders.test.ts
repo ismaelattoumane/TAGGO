@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import handler from './reconcile-paid-orders'
+import handler from '../../../api/cron/reconcile-paid-orders'
 
 afterEach(() => {
   vi.unstubAllEnvs()

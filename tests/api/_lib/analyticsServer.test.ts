@@ -11,7 +11,7 @@ import {
   toTaggoScanStats,
   SCAN_PERIOD_DAYS,
   TAGGO_SCAN_MIN_INTERVAL_SECONDS,
-} from './analyticsServer'
+} from '../../../api/_lib/analyticsServer'
 
 /**
  * ÉTAPE 11 — Tests de la logique serveur d'analytics.
