@@ -180,18 +180,26 @@ describe('audit de sécurité — surface serveur', () => {
       .filter((file) => !file.includes(`${join('_lib', '')}`))
       .map((file) => relative(root, file))
 
+    // Les dossiers `_analytics`, `_stripe` et `_subscriptions` sont préfixés par
+    // `_` : Vercel ne les déploie pas comme fonctions. Ils ne sont atteignables
+    // que via les trois points d'entrée `api/analytics.ts`, `api/stripe.ts` et
+    // `api/subscriptions.ts` (voir `vercel.json`). Toute nouvelle route doit
+    // être ajoutée ici volontairement.
     expect(endpoints).toEqual([
-      'api/analytics/scan.ts',
-      'api/analytics/taggo.ts',
+      'api/_analytics/scan.ts',
+      'api/_analytics/taggo.ts',
+      'api/_stripe/config.ts',
+      'api/_stripe/create-checkout-session.ts',
+      'api/_stripe/webhook.ts',
+      'api/_subscriptions/auto-renew.ts',
+      'api/_subscriptions/renew.ts',
+      'api/_subscriptions/taggo.ts',
+      'api/analytics.ts',
       'api/cron/reconcile-paid-orders.ts',
       'api/orders/status.ts',
       'api/sitemap.ts',
-      'api/stripe/config.ts',
-      'api/stripe/create-checkout-session.ts',
-      'api/stripe/webhook.ts',
-      'api/subscriptions/auto-renew.ts',
-      'api/subscriptions/renew.ts',
-      'api/subscriptions/taggo.ts',
+      'api/stripe.ts',
+      'api/subscriptions.ts',
     ])
   })
 
@@ -511,7 +519,7 @@ describe('audit de sécurité — confidentialité des scans', () => {
   })
 
   it('n’autorise l’endpoint public que via le service, jamais par JWT', () => {
-    const scanEndpoint = read(resolve(root, 'api/analytics/scan.ts'))
+    const scanEndpoint = read(resolve(root, 'api/_analytics/scan.ts'))
 
     // L'écriture est publique par nature (le visiteur n'a pas de compte), mais
     // elle ne doit accepter ni corps de requête ni horodatage du client.
@@ -521,7 +529,7 @@ describe('audit de sécurité — confidentialité des scans', () => {
   })
 
   it('authentifie et isole la lecture des statistiques', () => {
-    const statsEndpoint = read(resolve(root, 'api/analytics/taggo.ts'))
+    const statsEndpoint = read(resolve(root, 'api/_analytics/taggo.ts'))
 
     expect(statsEndpoint).toMatch(/resolveAuthenticatedUser/)
     // L'identifiant du propriétaire vient du JWT résolu, jamais de l'URL.
@@ -529,7 +537,7 @@ describe('audit de sécurité — confidentialité des scans', () => {
   })
 
   it('absorbe les pannes analytics sans bloquer le parcours public', () => {
-    const scanEndpoint = read(resolve(root, 'api/analytics/scan.ts'))
+    const scanEndpoint = read(resolve(root, 'api/_analytics/scan.ts'))
     const client = read(resolve(root, 'src/features/analytics/scanClient.ts'))
 
     // Une panne analytics répond en 200 avec recorded: false : le visiteur
@@ -557,13 +565,13 @@ describe('audit de sécurité — confidentialité des scans', () => {
  */
 describe('audit de sécurité — abonnements TAGGO', () => {
   const subscriptionFiles = [
-    ...listFiles(resolve(root, 'api/subscriptions'), ['.ts']),
+    ...listFiles(resolve(root, 'api/_subscriptions'), ['.ts']),
     resolve(root, 'api/_lib/subscriptionServer.ts'),
     ...listFiles(resolve(root, 'src/features/subscriptions'), ['.ts', '.tsx']),
   ].filter((file) => !file.includes('.test.'))
 
   it('n’expose aucun endpoint d’abonnement sans authentification JWT', () => {
-    const endpoints = listFiles(resolve(root, 'api/subscriptions'), ['.ts'])
+    const endpoints = listFiles(resolve(root, 'api/_subscriptions'), ['.ts'])
       .filter((file) => !file.includes('.test.'))
       .map((file) => relative(root, file))
 
@@ -592,7 +600,7 @@ describe('audit de sécurité — abonnements TAGGO', () => {
   it('n’écrit jamais une date, un statut ou un identifiant Stripe depuis le navigateur', () => {
     for (const file of subscriptionFiles) {
       const source = read(file)
-      const clientSide = file.includes(`${join('src', '')}`) || file.includes('api/subscriptions')
+      const clientSide = file.includes(`${join('src', '')}`) || file.includes('api/_subscriptions')
 
       if (!clientSide) continue
 
@@ -698,7 +706,7 @@ describe('audit de sécurité — abonnements TAGGO', () => {
       expect(EMAIL_TYPES).toContain(type)
     }
 
-    const webhook = read(resolve(root, 'api/stripe/webhook.ts'))
+    const webhook = read(resolve(root, 'api/_stripe/webhook.ts'))
     expect(webhook).not.toMatch(/SUBSCRIPTION_/)
   })
 })

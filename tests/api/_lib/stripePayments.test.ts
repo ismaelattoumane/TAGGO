@@ -27,9 +27,9 @@ const SERVERED_FILES = [
   'api/_lib/http.ts',
   'api/_lib/supabaseAdmin.ts',
   'api/_lib/orderServer.ts',
-  'api/stripe/create-checkout-session.ts',
-  'api/stripe/webhook.ts',
-  'api/stripe/config.ts',
+  'api/_stripe/create-checkout-session.ts',
+  'api/_stripe/webhook.ts',
+  'api/_stripe/config.ts',
   'api/orders/status.ts',
 ].map((path) => ({ path, content: readFileSync(resolve(root, path), 'utf8') }))
 
@@ -143,7 +143,7 @@ describe('côté serveur — règles non négociables', () => {
   })
 
   it('vérifie la signature Stripe avant tout traitement', () => {
-    const webhook = SERVERED_FILES.find((file) => file.path === 'api/stripe/webhook.ts')
+    const webhook = SERVERED_FILES.find((file) => file.path === 'api/_stripe/webhook.ts')
 
     expect(webhook?.content).toMatch(/constructWebhookEvent\(rawBody, signature, env\.stripeWebhookSecret/)
     const signatureCheck = webhook?.content.lastIndexOf('constructWebhookEvent') ?? -1

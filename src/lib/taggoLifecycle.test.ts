@@ -176,7 +176,7 @@ describe('scénario 2 — commande non payée → aucun abonnement', () => {
   it('la période n’est ouverte que depuis l’attribution, jamais depuis le checkout', () => {
     // Aucune fonction d'ouverture de période n'est appelée depuis
     // create-checkout-session : le checkout ne crée que la commande.
-    const checkout = readFileSync(resolve(root, 'api/stripe/create-checkout-session.ts'), 'utf8')
+    const checkout = readFileSync(resolve(root, 'api/_stripe/create-checkout-session.ts'), 'utf8')
     expect(checkout).not.toMatch(/grant_included_taggo_period|renew_taggo_subscription/)
   })
 })

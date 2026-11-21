@@ -1,0 +1,363 @@
+--- a/src/lib/securityAudit.test.ts
++++ b/src/lib/securityAudit.test.ts
+@@ -180,18 +180,26 @@
+       .filter((file) => !file.includes(`${join('_lib', '')}`))
+       .map((file) => relative(root, file))
+ 
++    // Les dossiers `_analytics`, `_stripe` et `_subscriptions` sont préfixés par
++    // `_` : Vercel ne les déploie pas comme fonctions. Ils ne sont atteignables
++    // que via les trois points d'entrée `api/analytics.ts`, `api/stripe.ts` et
++    // `api/subscriptions.ts` (voir `vercel.json`). Toute nouvelle route doit
++    // être ajoutée ici volontairement.
+     expect(endpoints).toEqual([
+-      'api/analytics/scan.ts',
+-      'api/analytics/taggo.ts',
++      'api/_analytics/scan.ts',
++      'api/_analytics/taggo.ts',
++      'api/_stripe/config.ts',
++      'api/_stripe/create-checkout-session.ts',
++      'api/_stripe/webhook.ts',
++      'api/_subscriptions/auto-renew.ts',
++      'api/_subscriptions/renew.ts',
++      'api/_subscriptions/taggo.ts',
++      'api/analytics.ts',
+       'api/cron/reconcile-paid-orders.ts',
+       'api/orders/status.ts',
+       'api/sitemap.ts',
+-      'api/stripe/config.ts',
+-      'api/stripe/create-checkout-session.ts',
+-      'api/stripe/webhook.ts',
+-      'api/subscriptions/auto-renew.ts',
+-      'api/subscriptions/renew.ts',
+-      'api/subscriptions/taggo.ts',
++      'api/stripe.ts',
++      'api/subscriptions.ts',
+     ])
+   })
+ 
+@@ -511,7 +519,7 @@
+   })
+ 
+   it('n’autorise l’endpoint public que via le service, jamais par JWT', () => {
+-    const scanEndpoint = read(resolve(root, 'api/analytics/scan.ts'))
++    const scanEndpoint = read(resolve(root, 'api/_analytics/scan.ts'))
+ 
+     // L'écriture est publique par nature (le visiteur n'a pas de compte), mais
+     // elle ne doit accepter ni corps de requête ni horodatage du client.
+@@ -521,7 +529,7 @@
+   })
+ 
+   it('authentifie et isole la lecture des statistiques', () => {
+-    const statsEndpoint = read(resolve(root, 'api/analytics/taggo.ts'))
++    const statsEndpoint = read(resolve(root, 'api/_analytics/taggo.ts'))
+ 
+     expect(statsEndpoint).toMatch(/resolveAuthenticatedUser/)
+     // L'identifiant du propriétaire vient du JWT résolu, jamais de l'URL.
+@@ -529,7 +537,7 @@
+   })
+ 
+   it('absorbe les pannes analytics sans bloquer le parcours public', () => {
+-    const scanEndpoint = read(resolve(root, 'api/analytics/scan.ts'))
++    const scanEndpoint = read(resolve(root, 'api/_analytics/scan.ts'))
+     const client = read(resolve(root, 'src/features/analytics/scanClient.ts'))
+ 
+     // Une panne analytics répond en 200 avec recorded: false : le visiteur
+@@ -557,13 +565,13 @@
+  */
+ describe('audit de sécurité — abonnements TAGGO', () => {
+   const subscriptionFiles = [
+-    ...listFiles(resolve(root, 'api/subscriptions'), ['.ts']),
++    ...listFiles(resolve(root, 'api/_subscriptions'), ['.ts']),
+     resolve(root, 'api/_lib/subscriptionServer.ts'),
+     ...listFiles(resolve(root, 'src/features/subscriptions'), ['.ts', '.tsx']),
+   ].filter((file) => !file.includes('.test.'))
+ 
+   it('n’expose aucun endpoint d’abonnement sans authentification JWT', () => {
+-    const endpoints = listFiles(resolve(root, 'api/subscriptions'), ['.ts'])
++    const endpoints = listFiles(resolve(root, 'api/_subscriptions'), ['.ts'])
+       .filter((file) => !file.includes('.test.'))
+       .map((file) => relative(root, file))
+ 
+@@ -592,7 +600,7 @@
+   it('n’écrit jamais une date, un statut ou un identifiant Stripe depuis le navigateur', () => {
+     for (const file of subscriptionFiles) {
+       const source = read(file)
+-      const clientSide = file.includes(`${join('src', '')}`) || file.includes('api/subscriptions')
++      const clientSide = file.includes(`${join('src', '')}`) || file.includes('api/_subscriptions')
+ 
+       if (!clientSide) continue
+ 
+@@ -698,7 +706,7 @@
+       expect(EMAIL_TYPES).toContain(type)
+     }
+ 
+-    const webhook = read(resolve(root, 'api/stripe/webhook.ts'))
++    const webhook = read(resolve(root, 'api/_stripe/webhook.ts'))
+     expect(webhook).not.toMatch(/SUBSCRIPTION_/)
+   })
+ })
+--- a/src/lib/taggoLifecycle.test.ts
++++ b/src/lib/taggoLifecycle.test.ts
+@@ -176,7 +176,7 @@
+   it('la période n’est ouverte que depuis l’attribution, jamais depuis le checkout', () => {
+     // Aucune fonction d'ouverture de période n'est appelée depuis
+     // create-checkout-session : le checkout ne crée que la commande.
+-    const checkout = readFileSync(resolve(root, 'api/stripe/create-checkout-session.ts'), 'utf8')
++    const checkout = readFileSync(resolve(root, 'api/_stripe/create-checkout-session.ts'), 'utf8')
+     expect(checkout).not.toMatch(/grant_included_taggo_period|renew_taggo_subscription/)
+   })
+ })
+--- a/tests/api/_lib/stripePayments.test.ts
++++ b/tests/api/_lib/stripePayments.test.ts
+@@ -27,9 +27,9 @@
+   'api/_lib/http.ts',
+   'api/_lib/supabaseAdmin.ts',
+   'api/_lib/orderServer.ts',
+-  'api/stripe/create-checkout-session.ts',
+-  'api/stripe/webhook.ts',
+-  'api/stripe/config.ts',
++  'api/_stripe/create-checkout-session.ts',
++  'api/_stripe/webhook.ts',
++  'api/_stripe/config.ts',
+   'api/orders/status.ts',
+ ].map((path) => ({ path, content: readFileSync(resolve(root, path), 'utf8') }))
+ 
+@@ -143,7 +143,7 @@
+   })
+ 
+   it('vérifie la signature Stripe avant tout traitement', () => {
+-    const webhook = SERVERED_FILES.find((file) => file.path === 'api/stripe/webhook.ts')
++    const webhook = SERVERED_FILES.find((file) => file.path === 'api/_stripe/webhook.ts')
+ 
+     expect(webhook?.content).toMatch(/constructWebhookEvent\(rawBody, signature, env\.stripeWebhookSecret/)
+     const signatureCheck = webhook?.content.lastIndexOf('constructWebhookEvent') ?? -1
+--- a/tests/api/subscriptions/subscriptionsApi.test.ts
++++ b/tests/api/subscriptions/subscriptionsApi.test.ts
+@@ -88,7 +88,7 @@
+ 
+ describe('GET /api/subscriptions/taggo', () => {
+   it('lit l’état avec le propriétaire déduit du JWT', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/taggo')
++    const { default: handler } = await import('../../../api/_subscriptions/taggo')
+ 
+     const response = await handler(request())
+ 
+@@ -100,7 +100,7 @@
+   })
+ 
+   it('n’accepte jamais un owner_id fourni par l’URL', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/taggo')
++    const { default: handler } = await import('../../../api/_subscriptions/taggo')
+ 
+     await handler(request({ query: { qr_id: QR_ID, owner_id: OTHER_USER_ID } }))
+ 
+@@ -110,7 +110,7 @@
+   })
+ 
+   it('refuse une requête sans JWT', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/taggo')
++    const { default: handler } = await import('../../../api/_subscriptions/taggo')
+     resolveAuthenticatedUser.mockResolvedValue(null)
+ 
+     const response = await handler(request({ headers: {} }))
+@@ -121,7 +121,7 @@
+   })
+ 
+   it('refuse un TAGGO appartenant à quelqu’un d’autre', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/taggo')
++    const { default: handler } = await import('../../../api/_subscriptions/taggo')
+     getTaggoSubscriptionState.mockResolvedValue({ ok: false, reason: 'not_owner' })
+ 
+     const response = await handler(request())
+@@ -131,7 +131,7 @@
+   })
+ 
+   it('refuse une méthode autre que GET', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/taggo')
++    const { default: handler } = await import('../../../api/_subscriptions/taggo')
+ 
+     const response = await handler(request({ method: 'POST' }))
+ 
+@@ -139,7 +139,7 @@
+   })
+ 
+   it('n’expose ni identifiant Stripe ni montant', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/taggo')
++    const { default: handler } = await import('../../../api/_subscriptions/taggo')
+ 
+     const response = await handler(request())
+     const serialized = JSON.stringify(response.body)
+@@ -149,7 +149,7 @@
+   })
+ 
+   it('ne renvoie jamais un abonnement actif en cas de panne', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/taggo')
++    const { default: handler } = await import('../../../api/_subscriptions/taggo')
+     getTaggoSubscriptionState.mockResolvedValue({ ok: false, reason: 'subscription_unavailable' })
+ 
+     const response = await handler(request())
+@@ -161,7 +161,7 @@
+ 
+ describe('POST /api/subscriptions/renew', () => {
+   it('refuse tant qu’aucun tarif n’est configuré', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/renew')
++    const { default: handler } = await import('../../../api/_subscriptions/renew')
+     requestTaggoRenewal.mockResolvedValue({ ok: false, reason: 'renewal_unavailable' })
+ 
+     const response = await handler(request({ method: 'POST' }))
+@@ -171,7 +171,7 @@
+   })
+ 
+   it('ne déclare jamais un paiement réussi', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/renew')
++    const { default: handler } = await import('../../../api/_subscriptions/renew')
+     requestTaggoRenewal.mockResolvedValue({ ok: false, reason: 'renewal_unavailable' })
+ 
+     const response = await handler(request({ method: 'POST' }))
+@@ -185,7 +185,7 @@
+   })
+ 
+   it('refuse une requête sans JWT', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/renew')
++    const { default: handler } = await import('../../../api/_subscriptions/renew')
+     resolveAuthenticatedUser.mockResolvedValue(null)
+ 
+     const response = await handler(request({ method: 'POST', headers: {} }))
+@@ -195,7 +195,7 @@
+   })
+ 
+   it('refuse une méthode autre que POST', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/renew')
++    const { default: handler } = await import('../../../api/_subscriptions/renew')
+ 
+     const response = await handler(request({ method: 'GET' }))
+ 
+@@ -206,7 +206,7 @@
+ 
+ describe('POST /api/subscriptions/auto-renew', () => {
+   it('enregistre la préférence avec le propriétaire du JWT', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
++    const { default: handler } = await import('../../../api/_subscriptions/auto-renew')
+     setTaggoAutoRenew.mockResolvedValue({ ok: true })
+ 
+     const response = await handler(
+@@ -221,7 +221,7 @@
+   })
+ 
+   it('accepte la désactivation', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
++    const { default: handler } = await import('../../../api/_subscriptions/auto-renew')
+     setTaggoAutoRenew.mockResolvedValue({ ok: true })
+ 
+     await handler(request({ method: 'POST', query: { qr_id: QR_ID, enabled: 'false' } }))
+@@ -230,7 +230,7 @@
+   })
+ 
+   it('refuse une valeur qui n’est pas true/false', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
++    const { default: handler } = await import('../../../api/_subscriptions/auto-renew')
+ 
+     for (const enabled of ['oui', '1', 'yes', '']) {
+       const response = await handler(
+@@ -242,7 +242,7 @@
+   })
+ 
+   it('n’accepte pas d’activer le renouvellement pour le TAGGO de quelqu’un d’autre', async () => {
+-    const { default: handler } = await import('../../../api/subscriptions/auto-renew')
++    const { default: handler } = await import('../../../api/_subscriptions/auto-renew')
+     setTaggoAutoRenew.mockResolvedValue({ ok: false, reason: 'not_owner' })
+ 
+     const response = await handler(
+--- a/.github/workflows/deploy.yml
++++ b/.github/workflows/deploy.yml
+@@ -1,23 +1,28 @@
+-name: Build and Deploy to GitHub Pages
++name: CI and Deploy to GitHub Pages
++
++# CI : exécutée sur chaque pull request vers main et sur chaque push de branche.
++# Déploiement : uniquement après succès de la CI, et uniquement sur un push sur main.
++# NB : GitHub Pages ne peut pas exécuter les fonctions /api/* (Stripe, analytics,
++# abonnements). Si le site public est servi par Vercel, ce déploiement Pages n'est
++# utile que comme prévisualisation statique — voir le rapport de phase 1.
+ 
+ on:
+   push:
+-    branches: [ main ]  # Change 'main' si ta branche par défaut est 'master'
++    branches: [ '**' ]
+   pull_request:
+     branches: [ main ]
+ 
+ permissions:
+   contents: read
+-  pages: write
+-  id-token: write
+-
+-concurrency:
+-  group: "pages"
+-  cancel-in-progress: false
+ 
+ jobs:
+-  build:
++  ci:
++    name: CI (typecheck, lint, tests, build)
+     runs-on: ubuntu-latest
++    # Une seule CI par référence : une nouvelle exécution annule la précédente.
++    concurrency:
++      group: ci-${{ github.workflow }}-${{ github.ref }}
++      cancel-in-progress: true
+     steps:
+       - uses: actions/checkout@v4
+ 
+@@ -25,26 +30,46 @@
+         uses: actions/setup-node@v4
+         with:
+           node-version: '22'  # Les dépendances actuelles du projet exigent Node 22+
++          cache: npm
+ 
+       - name: Install dependencies
+         run: npm ci
+ 
++      - name: Typecheck
++        run: npm run typecheck
++
++      - name: Lint
++        run: npm run lint
++
++      - name: Tests
++        run: npm test
++
+       - name: Build
+         run: npm run build
+ 
+       - name: Upload artifact
++        # Le build n'est publié que depuis main ; ailleurs il sert seulement de vérification.
++        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+         uses: actions/upload-pages-artifact@v3
+         with:
+-          path: './dist'  # Ajuste si ton dossier de build est différent
++          path: './dist'
+ 
+   deploy:
++    name: Deploy to GitHub Pages
++    needs: ci
++    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
++    runs-on: ubuntu-latest
++    permissions:
++      contents: read
++      pages: write
++      id-token: write
++    concurrency:
++      group: pages
++      cancel-in-progress: false
+     environment:
+       name: github-pages
+       url: ${{ steps.deployment.outputs.page_url }}
+-    runs-on: ubuntu-latest
+-    needs: build
+-    if: github.ref == 'refs/heads/main'  # Deploy seulement après un push sur main
+     steps:
+       - name: Deploy to GitHub Pages
+         id: deployment
+-        uses: actions/deploy-pages@v4
+\ No newline at end of file
++        uses: actions/deploy-pages@v4
