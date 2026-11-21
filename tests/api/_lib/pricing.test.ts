@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { parseCheckoutItems, priceCart, isValidQuantity } from './pricing'
-import type { CatalogLookup, ServerCatalogEntry } from './catalogTypes'
-import { MAX_PAYMENT_LINE_QUANTITY, MAX_PAYMENT_LINES } from '../../src/features/payments/paymentTypes'
+import { parseCheckoutItems, priceCart, isValidQuantity } from '../../../api/_lib/pricing'
+import type { CatalogLookup, ServerCatalogEntry } from '../../../api/_lib/catalogTypes'
+import { MAX_PAYMENT_LINE_QUANTITY, MAX_PAYMENT_LINES } from '../../../src/features/payments/paymentTypes'
 
 const VARIANT_A = '11111111-1111-4111-8111-111111111111'
 const VARIANT_B = '22222222-2222-4222-8222-222222222222'

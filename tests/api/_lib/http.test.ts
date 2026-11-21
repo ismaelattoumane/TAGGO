@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { getHeader, json, jsonBody, readRawBody, resolveAppUrl } from './http'
-import { MAX_RAW_BODY_BYTES } from './limits'
-import type { ApiRequest } from './types'
+import { getHeader, json, jsonBody, readRawBody, resolveAppUrl } from '../../../api/_lib/http'
+import { MAX_RAW_BODY_BYTES } from '../../../api/_lib/limits'
+import type { ApiRequest } from '../../../api/_lib/types'
 
 function request(overrides: Partial<ApiRequest> = {}): ApiRequest {
   return { method: 'POST', headers: {}, ...overrides }

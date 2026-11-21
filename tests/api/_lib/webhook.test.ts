@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { HANDLED_EVENT_TYPES, processStripeEvent, stripeWebhookHttpStatus, type OrderForPayment, type WebhookDeps } from './webhook'
-import type { StripeEvent } from './types'
+import { HANDLED_EVENT_TYPES, processStripeEvent, stripeWebhookHttpStatus, type OrderForPayment, type WebhookDeps } from '../../../api/_lib/webhook'
+import type { StripeEvent } from '../../../api/_lib/types'
 
 const ORDER_ID = '44444444-4444-4444-8444-444444444444'
 const SESSION_ID = 'cs_test_123'

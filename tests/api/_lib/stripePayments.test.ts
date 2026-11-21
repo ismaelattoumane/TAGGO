@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
  */
 
 const here = dirname(fileURLToPath(import.meta.url))
-const root = resolve(here, '../..')
+const root = resolve(here, '../../..')
 
 const MIGRATION = readFileSync(
   resolve(root, 'supabase/migrations/20260930000000_stripe_payments.sql'),

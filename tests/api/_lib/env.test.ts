@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertTestModeKey, isServerDatabaseConfigured, isStripeConfigured, readServerEnv } from './env'
+import { assertTestModeKey, isServerDatabaseConfigured, isStripeConfigured, readServerEnv } from '../../../api/_lib/env'
 
 const TEST_ENV = {
   STRIPE_SECRET_KEY: 'sk_test_placeholder',

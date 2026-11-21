@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { attachStripeSession, finishStripeEvent } from './orderServer'
+import { attachStripeSession, finishStripeEvent } from '../../../api/_lib/orderServer'
 
 function makeClient(order: any, updateResult: any) {
   return {
